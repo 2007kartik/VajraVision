@@ -11,12 +11,12 @@ const Hero = lazy(() => import("./components/Hero.jsx"));
 
 /* ── design tokens (hero / landing only) ── */
 const C = {
-  bg: "#0A0E14", panel: "#101720", border: "#1E2A36",
-  text: "#E7EDF3", dim: "#8996A6", faint: "#4C5A68",
-  optical: "#F2A93B", sar: "#4FD1C5", change: "#EF5DA8", good: "#6EE7A0",
+  bg: "#0B0F18", panel: "#111827", border: "#1C2A3A",
+  text: "#EDF2F7", dim: "#8899AA", faint: "#3D5068",
+  optical: "#F0A847", sar: "#38BDF8", change: "#F472B6", good: "#4ADE80",
 };
-const mono  = { fontFamily: "'JetBrains Mono', monospace" };
-const disp  = { fontFamily: "'Space Grotesk', sans-serif" };
+const mono  = { fontFamily: "'JetBrains Mono', 'Fira Code', monospace" };
+const disp  = { fontFamily: "'Inter', 'Space Grotesk', sans-serif" };
 
 function usePrefersReducedMotion() {
   const [v, setV] = useState(() =>
@@ -556,23 +556,31 @@ function ConsoleBridge() {
   return (
     <div style={{
       background: C.bg,
-      padding: "72px 24px 0",
-      textAlign: "center",
+      padding: "80px 24px 0",
       borderTop: `1px solid ${C.border}`,
     }}>
-      <div style={{ maxWidth: 640, margin: "0 auto" }}>
-        <div style={{ ...mono, fontSize: 11, color: C.change, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 16 }}>
-          Product console
+      <div style={{ maxWidth: 700, margin: "0 auto", textAlign: "center" }}>
+        <div style={{
+          display: "inline-flex", alignItems: "center", gap: 8,
+          ...mono, fontSize: 10, color: C.change,
+          letterSpacing: 2, textTransform: "uppercase",
+          marginBottom: 20,
+          background: `${C.change}10`,
+          border: `1px solid ${C.change}33`,
+          padding: "5px 14px", borderRadius: 20,
+        }}>
+          ↓ Product console
         </div>
-        <h2 style={{ ...disp, fontSize: "clamp(26px, 4vw, 42px)", fontWeight: 700, letterSpacing: -1, marginBottom: 14 }}>
-          One interface.<br />Every input type.
+        <h2 style={{ ...disp, fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 700, letterSpacing: -1.2, marginBottom: 16, lineHeight: 1.1 }}>
+          One interface.<br />
+          <span style={{ color: C.optical }}>Every input type.</span>
         </h2>
-        <p style={{ fontSize: 15, color: C.dim, lineHeight: 1.7, marginBottom: 0 }}>
-          Upload one or two images, type your question. The agent handles the rest —
-          classification, routing, inference, and evidence-grounded output.
+        <p style={{ fontSize: 15, color: C.dim, lineHeight: 1.75, maxWidth: 480, margin: "0 auto" }}>
+          Upload one or two images, type your question. The agent classifies the task,
+          picks a specialist, and returns a structured, evidence-grounded answer.
         </p>
       </div>
-      <div style={{ marginTop: 48, height: 1, background: `linear-gradient(90deg, transparent, ${C.border}, transparent)` }} />
+      <div style={{ marginTop: 56, height: 1, background: `linear-gradient(90deg, transparent, ${C.border}, transparent)` }} />
     </div>
   );
 }
@@ -584,19 +592,19 @@ export default function LandingPage() {
   return (
     <div style={{ background: C.bg, color: C.text, ...disp }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #0A0E14; }
+        body { background: #0B0F18; }
         #root { width: 100% !important; max-width: 100% !important; border: none !important; min-height: 100vh; text-align: left; }
-        ::selection { background: #EF5DA844; }
+        ::selection { background: #F472B644; }
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .step-pulse { animation: spulse 1s ease-in-out infinite; }
-        @keyframes spulse { 0%,100%{box-shadow:0 0 0 0 #EF5DA844}50%{box-shadow:0 0 0 5px #EF5DA800} }
+        @keyframes spulse { 0%,100%{box-shadow:0 0 0 0 #F472B644}50%{box-shadow:0 0 0 5px #F472B600} }
         .fade-in { animation: fadein .4s ease forwards; }
         @keyframes fadein { from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)} }
         @keyframes nudge { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(6px)} }
-        ::-webkit-scrollbar { width:6px; } ::-webkit-scrollbar-thumb { background:#2C3D4C; border-radius:3px; }
+        ::-webkit-scrollbar { width:6px; } ::-webkit-scrollbar-thumb { background:#243444; border-radius:3px; }
         @media (prefers-reduced-motion:reduce) {
           .spin,.step-pulse,.fade-in { animation:none !important; }
           * { transition-duration:.01ms !important; }

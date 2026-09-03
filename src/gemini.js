@@ -3,32 +3,68 @@
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
 const genAI = new GoogleGenerativeAI(API_KEY);
 
+/* internal model list — never shown in the UI */
+const VISION_MODELS = ["gemini-2.5-flash","gemini-2.5-pro","gemini-1.5-flash","gemini-1.5-pro"];
+const TEXT_MODELS   = ["gemini-2.5-flash","gemini-1.5-flash","gemini-1.5-pro","gemini-1.0-pro"];
+
+/* public aliases — shown to the user instead of real model names */
+const MODEL_ALIAS = {
+  "gemini-2.5-flash": "VLM-1",
+  "gemini-2.5-pro":   "VLM-2",
+  "gemini-1.5-flash": "VLM-3",
+  "gemini-1.5-pro":   "VLM-4",
+  "gemini-1.0-pro":   "VLM-5",
+};
+const toAlias = (name) => MODEL_ALIAS[name] || "VLM";
+
+function isRetryable(err) {
+  const msg = err?.message || String(err);
+  if ([503,429,500,502,504].some(c => msg.includes(String(c)))) return true;
+  if (/high demand|overload|quota|rate.?limit|unavailable|try again/i.test(msg)) return true;
+  return false;
+}
+
+async function withFallback(modelList, fn) {
+  let lastErr;
+  for (const modelName of modelList) {
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName });
+      const result = await fn(model, modelName);
+      return { result, modelUsed: toAlias(modelName) };
+    } catch (err) {
+      lastErr = err;
+      if (isRetryable(err)) { console.warn(`[SatQuery] ${toAlias(modelName)} busy, trying next…`); continue; }
+      throw err;
+    }
+  }
+  throw new Error(`Vision model temporarily unavailable. Please try again shortly.`);
+}
+
 async function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result.split(",")[1];
-      resolve({ inlineData: { data: base64, mimeType: file.type || "image/png" } });
-    };
+    reader.onload = () => resolve({ inlineData: { data: reader.result.split(",")[1], mimeType: file.type || "image/png" } });
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
 }
 
 export async function classifyInput(query, imageCount) {
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
   const prompt = `You are a remote-sensing AI controller for SatQuery AI.
 Analyse query and image count and classify the task.
 Query: "${query}"
 Number of images: ${imageCount}
 Choose EXACTLY one taskType: SINGLE_VQA, SINGLE_CAPTION, SINGLE_GROUNDING, CROSS_MODAL, BITEMPORAL_CHANGE
-Return ONLY valid JSON (no markdown):
+Return ONLY valid JSON (no markdown fences):
 {"taskType":"SINGLE_VQA","detectedInputType":"single","primaryTask":"Visual Question Answering","specialist":"RS-VQA","reasoning":"reason here","confidence":90}`;
-  const result = await model.generateContent(prompt);
+
+  const { result, modelUsed } = await withFallback(TEXT_MODELS, (model) => model.generateContent(prompt));
   const raw = result.response.text().trim();
   const m = raw.match(/\{[\s\S]*\}/);
-  if (!m) throw new Error("Bad classification JSON: " + raw.slice(0,200));
-  return JSON.parse(m[0]);
+  if (!m) throw new Error("Classification failed — please retry.");
+  const parsed = JSON.parse(m[0]);
+  parsed._modelUsed = modelUsed;
+  return parsed;
 }
 
 export async function validateImages(files, taskType) {
@@ -47,7 +83,6 @@ export async function validateImages(files, taskType) {
 }
 
 export async function runSpecialistModel(query, files, taskType, onProgress) {
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
   onProgress?.("Encoding imagery...");
   const imageParts = await Promise.all(files.map(fileToBase64));
 
@@ -61,31 +96,37 @@ export async function runSpecialistModel(query, files, taskType, onProgress) {
 
   const systemPrompt = prompts[taskType] || `Analyse the satellite image(s) and answer: "${query}"`;
   onProgress?.("Running specialist inference...");
-  const result = await model.generateContent([systemPrompt, ...imageParts]);
+
+  const { result, modelUsed } = await withFallback(VISION_MODELS, (model, name) => {
+    onProgress?.(`Processing with ${toAlias(name)}...`);
+    return model.generateContent([systemPrompt, ...imageParts]);
+  });
+
   const text = result.response.text();
-  const m = text.match(/[Cc]onfidence[:\s]+(\d{1,3})%/);
-  const confidence = m ? Math.min(99, parseInt(m[1])) : Math.floor(78 + Math.random() * 17);
-  return { text, confidence };
+  const confMatch = text.match(/[Cc]onfidence[:\s]+(\d{1,3})%/);
+  const confidence = confMatch ? Math.min(99, parseInt(confMatch[1])) : Math.floor(78 + Math.random() * 17);
+  return { text, confidence, modelUsed };
 }
 
 export async function generateSummary(taskType, specialist, query, answer, validationResult) {
   const datasetMap = {
-    SINGLE_VQA: ["BigEarthNet (adaptation)", "RSVQA (evaluation)"],
-    SINGLE_CAPTION: ["BigEarthNet (adaptation)", "VRSBench (evaluation)"],
-    SINGLE_GROUNDING: ["BigEarthNet (adaptation)", "VRSBench (grounding)"],
-    CROSS_MODAL: ["BigEarthNet (adaptation)", "RSVQA", "CDVQA"],
+    SINGLE_VQA:        ["BigEarthNet (adaptation)", "RSVQA (evaluation)"],
+    SINGLE_CAPTION:    ["BigEarthNet (adaptation)", "VRSBench (evaluation)"],
+    SINGLE_GROUNDING:  ["BigEarthNet (adaptation)", "VRSBench (grounding)"],
+    CROSS_MODAL:       ["BigEarthNet (adaptation)", "RSVQA", "CDVQA"],
     BITEMPORAL_CHANGE: ["BigEarthNet (adaptation)", "CDVQA (change VQA)"],
   };
   const outputMap = {
-    SINGLE_VQA: ["textual answer", "land-cover evidence", "confidence score"],
-    SINGLE_CAPTION: ["scene caption", "land-cover breakdown", "confidence score"],
-    SINGLE_GROUNDING: ["spatial localisation", "region description", "bounding evidence"],
-    CROSS_MODAL: ["per-modality analysis", "fused answer", "cross-modal agreement"],
+    SINGLE_VQA:        ["textual answer", "land-cover evidence", "confidence score"],
+    SINGLE_CAPTION:    ["scene caption", "land-cover breakdown", "confidence score"],
+    SINGLE_GROUNDING:  ["spatial localisation", "region description", "bounding evidence"],
+    CROSS_MODAL:       ["per-modality analysis", "fused answer", "cross-modal agreement"],
     BITEMPORAL_CHANGE: ["change description", "spatial analysis", "magnitude estimate"],
   };
   return {
     taskSelected: taskType,
     specialist,
+    modelUsed: answer.modelUsed || "VLM",
     datasetsUsed: datasetMap[taskType] || ["BigEarthNet"],
     inputFiles: validationResult.files.map(f => f.name),
     queryIntent: query.length > 80 ? query.slice(0,80) + "..." : query,
@@ -94,4 +135,3 @@ export async function generateSummary(taskType, specialist, query, answer, valid
     timestamp: new Date().toISOString(),
   };
 }
-

@@ -16,7 +16,7 @@ function loadTextureSafe(url, onColor) {
       (tex) => {
         if (onColor) {
           if ("colorSpace" in tex) tex.colorSpace = THREE.SRGBColorSpace;
-          else if ("encoding"  in tex) tex.encoding = THREE.sRGBEncoding;
+          // sRGBEncoding removed in r152+, skip silently on older builds
         }
         tex.anisotropy = 8;
         resolve(tex);

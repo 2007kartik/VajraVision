@@ -1,48 +1,49 @@
 ﻿const C = {
-  bg: "#0C1118", border: "#1E2A36", text: "#E7EDF3",
-  dim: "#8996A6", faint: "#4C5A68",
-  optical: "#F2A93B", sar: "#4FD1C5", change: "#EF5DA8", good: "#6EE7A0",
+  bg: "#0C1219", surface: "#0E1520", border: "#1C2A3A",
+  text: "#EDF2F7", dim: "#8899AA", faint: "#3D5068",
+  optical: "#F0A847", sar: "#38BDF8", change: "#F472B6", good: "#4ADE80",
 };
-const mono = { fontFamily: "'JetBrains Mono', monospace" };
-const disp = { fontFamily: "'Space Grotesk', sans-serif" };
+const mono = { fontFamily: "'JetBrains Mono', 'Fira Code', monospace" };
+const sans = { fontFamily: "'Inter', 'Space Grotesk', sans-serif" };
 
 const STATS = [
-  { value: "5",              unit: "specialist models",    detail: "VQA Â· captioning Â· grounding Â· change Â· fusion",   color: C.optical },
-  { value: "4",              unit: "benchmark datasets",   detail: "BigEarthNet Â· VRSBench Â· RSVQA Â· CDVQA",           color: C.sar },
-  { value: "3",              unit: "input configurations", detail: "single Â· optical+SAR pair Â· bi-temporal pair",     color: C.change },
-  { value: "GeoTIFF",        unit: "native format",        detail: "TIFF Â· PNG Â· JPEG also accepted",                  color: C.good },
-  { value: "ISRO/SAC",       unit: "evaluation partner",   detail: "Cartosat-2S optical Â· RISAT-1 SAR",                color: C.dim },
-  { value: "Vision LLM",     unit: "vision backbone",      detail: "Remote-sensing adapted prompting",                 color: C.optical },
+  { value: "5",       unit: "Specialist models",    detail: "VQA · Captioning · Grounding · Change · Fusion", color: C.optical },
+  { value: "4",       unit: "Benchmark datasets",   detail: "BigEarthNet · VRSBench · RSVQA · CDVQA",         color: C.sar },
+  { value: "3",       unit: "Input configurations", detail: "Single · Optical+SAR pair · Bi-temporal pair",   color: C.change },
+  { value: "GeoTIFF", unit: "Native format",        detail: "TIFF · PNG · JPEG also accepted",                color: C.good },
+  { value: "ISRO",    unit: "Evaluation partner",   detail: "Cartosat-2S optical · RISAT-1 SAR",              color: C.dim },
+  { value: "VLM",     unit: "Vision backbone",      detail: "Remote-sensing adapted prompting pipeline",      color: C.optical },
 ];
 
 export default function CredibilityStrip() {
   return (
     <section
-      aria-label="Platform statistics"
+      aria-label="Platform specifications"
       style={{
         background: C.bg,
         borderTop: `1px solid ${C.border}`,
         borderBottom: `1px solid ${C.border}`,
-        padding: "56px 24px",
+        padding: "64px 24px",
       }}
     >
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+
         {/* header */}
-        <div style={{ marginBottom: 40, display: "flex", alignItems: "baseline", gap: 16, flexWrap: "wrap" }}>
-          <span style={{ ...mono, fontSize: 10, color: C.faint, letterSpacing: 1.5, textTransform: "uppercase" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 44, flexWrap: "wrap" }}>
+          <span style={{ ...mono, fontSize: 10, color: C.faint, letterSpacing: 2, textTransform: "uppercase" }}>
             Platform specs
           </span>
           <div style={{ height: 1, flex: 1, minWidth: 40, background: C.border }} />
         </div>
 
-        {/* stat grid */}
+        {/* stats grid */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
           gap: "1px",
           background: C.border,
           border: `1px solid ${C.border}`,
-          borderRadius: 10,
+          borderRadius: 12,
           overflow: "hidden",
         }}>
           {STATS.map((s) => (
@@ -50,19 +51,20 @@ export default function CredibilityStrip() {
               key={s.unit}
               style={{
                 background: C.bg,
-                padding: "28px 24px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
+                padding: "28px 22px",
+                display: "flex", flexDirection: "column", gap: 5,
+                transition: "background .15s ease",
               }}
+              onMouseEnter={e => e.currentTarget.style.background = C.surface}
+              onMouseLeave={e => e.currentTarget.style.background = C.bg}
             >
-              <div style={{ fontSize: 28, fontWeight: 700, color: s.color, ...disp, letterSpacing: -0.5, lineHeight: 1 }}>
+              <div style={{ fontSize: 30, fontWeight: 700, color: s.color, ...sans, letterSpacing: -0.5, lineHeight: 1 }}>
                 {s.value}
               </div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: C.text, ...disp }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.text, ...sans }}>
                 {s.unit}
               </div>
-              <div style={{ fontSize: 11, color: C.faint, ...mono, lineHeight: 1.5, marginTop: 2 }}>
+              <div style={{ fontSize: 11, color: C.faint, ...mono, lineHeight: 1.55, marginTop: 2 }}>
                 {s.detail}
               </div>
             </div>
@@ -70,12 +72,12 @@ export default function CredibilityStrip() {
         </div>
 
         {/* footnote */}
-        <p style={{ ...mono, fontSize: 10.5, color: C.faint, marginTop: 20, lineHeight: 1.6 }}>
-          Adapted on BigEarthNet multi-label remote-sensing dataset. Final evaluation on ISRO/SAC Cartosat-2S + RISAT co-registered pairs.
-          Benchmark scores normalised before combining VRSBench, RSVQA, and CDVQA metrics.
+        <p style={{ ...mono, fontSize: 10.5, color: C.faint, marginTop: 22, lineHeight: 1.7 }}>
+          Adapted on BigEarthNet multi-label remote-sensing dataset. Final scoring on ISRO/SAC
+          Cartosat-2S + RISAT co-registered pairs. Benchmark metrics normalised before combining
+          VRSBench, RSVQA, and CDVQA results.
         </p>
       </div>
     </section>
   );
 }
-

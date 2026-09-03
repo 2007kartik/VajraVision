@@ -1,12 +1,24 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
 body {
-  background: #0A0E14;
-  color: #E7EDF3;
+  background: #0B0F18;
+  color: #EDF2F7;
+  font-family: 'Inter', 'Space Grotesk', sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -17,7 +29,21 @@ body {
   width: 100%;
   max-width: 100%;
   min-height: 100vh;
-  border: none;
+  border: none !important;
   margin: 0;
   text-align: left;
+}
+
+/* global scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #243444; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #2C3D4C; }
+
+::selection { background: #F472B644; color: #EDF2F7; }
+
+/* focus rings */
+:focus-visible {
+  outline: 2px solid #38BDF8;
+  outline-offset: 2px;
 }
