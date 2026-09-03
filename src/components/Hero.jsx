@@ -1,332 +1,363 @@
-import { useRef, Suspense, useState, useEffect } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Stars } from "@react-three/drei";
+import React, { useRef, useEffect, useState } from "react";
 import * as THREE from "three";
+import earthMapUrl from "../assets/earth-blue-marble.jpg";
+import earthCloudsUrl from "../assets/earth-clouds.png";
+import earthSpecUrl from "../assets/earth-specular.jpg";
 
-/* ── real Earth photographic textures (CORS-enabled GitHub raw source) ── */
-const EARTH_MAP_URL  = "https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/earthmap1k.jpg";
-const EARTH_BUMP_URL = "https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/earthbump1k.jpg";
-const EARTH_SPEC_URL = "https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/earthspec1k.jpg";
-
-/* loads a texture without throwing — resolves null on failure */
-function loadTextureSafe(url, onColor) {
-  return new Promise((resolve) => {
-    new THREE.TextureLoader().load(
-      url,
-      (tex) => {
-        if (onColor) {
-          if ("colorSpace" in tex) tex.colorSpace = THREE.SRGBColorSpace;
-          // sRGBEncoding removed in r152+, skip silently on older builds
-        }
-        tex.anisotropy = 8;
-        resolve(tex);
-      },
-      undefined,
-      () => resolve(null)
-    );
-  });
-}
-
-/* ── deterministic pseudo-random ── */
-function makeRand(seed) {
-  let s = seed;
-  return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
-}
-
-/* equirectangular lon/lat → canvas pixel */
-function lonLatToXY(lon, lat, w, h) {
-  return { x: ((lon + 180) / 360) * w, y: ((90 - lat) / 180) * h };
-}
-
-/* organic wobbly landmass */
-function drawLandmass(ctx, cx, cy, rx, ry, points, seed, fill) {
-  const rand = makeRand(seed);
-  const coords = [];
-  const step = (Math.PI * 2) / points;
-  for (let i = 0; i < points; i++) {
-    const angle = i * step;
-    const wobble = 0.62 + rand() * 0.65;
-    coords.push([cx + Math.cos(angle) * rx * wobble, cy + Math.sin(angle) * ry * wobble]);
-  }
-  ctx.beginPath();
-  const mid0 = [
-    (coords[0][0] + coords[coords.length - 1][0]) / 2,
-    (coords[0][1] + coords[coords.length - 1][1]) / 2,
-  ];
-  ctx.moveTo(mid0[0], mid0[1]);
-  for (let i = 0; i < coords.length; i++) {
-    const next = coords[(i + 1) % coords.length];
-    const mid = [(coords[i][0] + next[0]) / 2, (coords[i][1] + next[1]) / 2];
-    ctx.quadraticCurveTo(coords[i][0], coords[i][1], mid[0], mid[1]);
-  }
-  ctx.closePath();
-  ctx.fillStyle = fill;
-  ctx.fill();
-}
-
-/* 2:1 equirectangular procedural canvas — instant placeholder + offline fallback */
-function buildEarthCanvas() {
-  const w = 1024, h = 512;
-  const canvas = document.createElement("canvas");
-  canvas.width = w; canvas.height = h;
-  const ctx = canvas.getContext("2d");
-
-  const ocean = ctx.createLinearGradient(0, 0, 0, h);
-  ocean.addColorStop(0,   "#123049");
-  ocean.addColorStop(0.5, "#1a3a5c");
-  ocean.addColorStop(1,   "#123049");
-  ctx.fillStyle = ocean;
-  ctx.fillRect(0, 0, w, h);
-
-  const continents = [
-    { lon: -100, lat:  48, rx:  95, ry:  78, pts: 14, seed: 11, col: "#2d5a27" },
-    { lon:  -80, lat:   8, rx:  34, ry:  34, pts: 10, seed: 12, col: "#356030" },
-    { lon:  -58, lat: -18, rx:  62, ry:  95, pts: 14, seed: 21, col: "#3a6b2a" },
-    { lon:   18, lat:   6, rx:  68, ry: 100, pts: 14, seed: 31, col: "#2d5a27" },
-    { lon:   12, lat:  50, rx:  42, ry:  30, pts: 10, seed: 41, col: "#3a6b2a" },
-    { lon:   95, lat:  52, rx: 150, ry:  70, pts: 16, seed: 51, col: "#2d5a27" },
-    { lon:  100, lat:  22, rx:  90, ry:  48, pts: 14, seed: 52, col: "#3a6b2a" },
-    { lon:  135, lat: -25, rx:  58, ry:  40, pts: 12, seed: 61, col: "#5c7a3b" },
-    { lon:  -42, lat:  74, rx:  30, ry:  24, pts: 10, seed: 71, col: "#c9d6de" },
-  ];
-  continents.forEach(({ lon, lat, rx, ry, pts, seed, col }) => {
-    const { x, y } = lonLatToXY(lon, lat, w, h);
-    drawLandmass(ctx, x, y, rx, ry, pts, seed, col);
-    drawLandmass(ctx, x + rx * 0.12, y - ry * 0.08, rx * 0.55, ry * 0.55, pts, seed + 3, "rgba(0,0,0,0.12)");
-  });
-
-  const islandRand = makeRand(99);
-  [{ lon: 118, lat: 2 }, { lon: -75, lat: 20 }].forEach(({ lon, lat }) => {
-    const { x, y } = lonLatToXY(lon, lat, w, h);
-    for (let i = 0; i < 10; i++) {
-      ctx.beginPath();
-      ctx.arc(x + (islandRand() - 0.5) * 90, y + (islandRand() - 0.5) * 40, 3 + islandRand() * 5, 0, Math.PI * 2);
-      ctx.fillStyle = "#356030";
-      ctx.fill();
-    }
-  });
-
-  const capH = h * 0.09;
-  const capN = ctx.createLinearGradient(0, 0, 0, capH);
-  capN.addColorStop(0, "rgba(225,238,255,0.92)");
-  capN.addColorStop(1, "rgba(225,238,255,0)");
-  ctx.fillStyle = capN;
-  ctx.fillRect(0, 0, w, capH);
-
-  const capS = ctx.createLinearGradient(0, h - capH, 0, h);
-  capS.addColorStop(0, "rgba(225,238,255,0)");
-  capS.addColorStop(1, "rgba(225,238,255,0.92)");
-  ctx.fillStyle = capS;
-  ctx.fillRect(0, h - capH, w, capH);
-
-  return canvas;
-}
-
-/* ── satellite on orbital path ── */
-function Satellite() {
-  const groupRef = useRef();
-  const trailRef = useRef();
-  const trailPoints = useRef([]);
-
-  useFrame(({ clock }) => {
-    const t = clock.getElapsedTime() * 0.18;
-    const r = 1.72, inc = Math.PI / 5;
-    const x = r * Math.cos(t);
-    const y = r * Math.sin(t) * Math.sin(inc);
-    const z = r * Math.sin(t) * Math.cos(inc);
-
-    if (groupRef.current) {
-      groupRef.current.position.set(x, y, z);
-      const dx = -Math.sin(t);
-      const dy =  Math.cos(t) * Math.sin(inc);
-      const dz =  Math.cos(t) * Math.cos(inc);
-      groupRef.current.lookAt(x + dx, y + dy, z + dz);
-    }
-
-    trailPoints.current.push(new THREE.Vector3(x, y, z));
-    if (trailPoints.current.length > 80) trailPoints.current.shift();
-    if (trailRef.current && trailPoints.current.length > 1) {
-      const geo = new THREE.BufferGeometry().setFromPoints(trailPoints.current);
-      trailRef.current.geometry.dispose();
-      trailRef.current.geometry = geo;
-    }
-  });
-
-  return (
-    <group>
-      <group ref={groupRef}>
-        {/* main bus */}
-        <mesh>
-          <boxGeometry args={[0.042, 0.022, 0.06]} />
-          <meshStandardMaterial color="#B0BEC5" metalness={0.8} roughness={0.3} />
-        </mesh>
-        {/* solar panel left */}
-        <mesh position={[-0.085, 0, 0]}>
-          <boxGeometry args={[0.1, 0.003, 0.044]} />
-          <meshStandardMaterial color="#1a237e" metalness={0.4} roughness={0.5} emissive="#1565C0" emissiveIntensity={0.3} />
-        </mesh>
-        {/* solar panel right */}
-        <mesh position={[0.085, 0, 0]}>
-          <boxGeometry args={[0.1, 0.003, 0.044]} />
-          <meshStandardMaterial color="#1a237e" metalness={0.4} roughness={0.5} emissive="#1565C0" emissiveIntensity={0.3} />
-        </mesh>
-        {/* antenna dish */}
-        <mesh position={[0, 0.022, 0]} rotation={[0.4, 0, 0]}>
-          <cylinderGeometry args={[0.016, 0.016, 0.004, 12]} />
-          <meshStandardMaterial color="#CFD8DC" metalness={0.9} roughness={0.1} />
-        </mesh>
-        {/* antenna mast */}
-        <mesh position={[0, 0.016, 0]}>
-          <cylinderGeometry args={[0.002, 0.002, 0.014, 6]} />
-          <meshStandardMaterial color="#90A4AE" metalness={0.7} roughness={0.3} />
-        </mesh>
-        {/* status light */}
-        <mesh position={[0.02, 0.012, 0.03]}>
-          <sphereGeometry args={[0.004, 8, 8]} />
-          <meshStandardMaterial color="#F2A93B" emissive="#F2A93B" emissiveIntensity={3} />
-        </mesh>
-      </group>
-
-      {/* orbital trail */}
-      <line ref={trailRef}>
-        <bufferGeometry />
-        <lineBasicMaterial color="#F2A93B" transparent opacity={0.28} />
-      </line>
-    </group>
-  );
-}
-
-/* ── Earth ── */
-function Earth({ scrollProgress }) {
-  const meshRef = useRef();
-  const atmosphereRef = useRef();
-
-  /* procedural placeholder — ready before network textures arrive */
-  const earthTexture = useRef(null);
-  if (!earthTexture.current) {
-    earthTexture.current = new THREE.CanvasTexture(buildEarthCanvas());
-    earthTexture.current.anisotropy = 8;
-    earthTexture.current.needsUpdate = true;
-  }
-
-  /* photographic textures loaded async */
-  const [realMap,  setRealMap]  = useState(null);
-  const [realBump, setRealBump] = useState(null);
-  const [realSpec, setRealSpec] = useState(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    loadTextureSafe(EARTH_MAP_URL,  true ).then((t) => { if (!cancelled && t) setRealMap(t);  });
-    loadTextureSafe(EARTH_BUMP_URL, false).then((t) => { if (!cancelled && t) setRealBump(t); });
-    loadTextureSafe(EARTH_SPEC_URL, false).then((t) => { if (!cancelled && t) setRealSpec(t); });
-    return () => { cancelled = true; };
-  }, []);
-
-  useFrame(({ clock }) => {
-    if (meshRef.current) meshRef.current.rotation.y = clock.getElapsedTime() * 0.04;
-    if (atmosphereRef.current)
-      atmosphereRef.current.material.opacity = Math.max(0, 0.07 - scrollProgress * 0.08);
-  });
-
-  return (
-    <group>
-      <mesh ref={meshRef}>
-        <sphereGeometry args={[1, 64, 64]} />
-        <meshPhongMaterial
-          map={realMap || earthTexture.current}
-          bumpMap={realBump || null}
-          bumpScale={realBump ? 0.015 : 0}
-          specularMap={realSpec || null}
-          specular={new THREE.Color(realSpec ? "#3a3a3a" : "#111111")}
-          shininess={realSpec ? 10 : 4}
-        />
-      </mesh>
-      {/* atmosphere glow */}
-      <mesh ref={atmosphereRef}>
-        <sphereGeometry args={[1.04, 48, 48]} />
-        <meshStandardMaterial color="#4FD1C5" transparent opacity={0.07} side={THREE.BackSide} />
-      </mesh>
-    </group>
-  );
-}
-
-/* ── camera driven by scroll progress ── */
-function CameraRig({ scrollProgress }) {
-  const { camera } = useThree();
-  useFrame(() => {
-    const targetZ = 4 - scrollProgress * 2.7;
-    camera.position.z += (targetZ - camera.position.z) * 0.08;
-    camera.fov = 45 + scrollProgress * 10;
-    camera.updateProjectionMatrix();
-  });
-  return null;
-}
-
-/* ── scene ── */
-function GlobeScene({ scrollProgress }) {
-  return (
-    <>
-      <ambientLight intensity={0.18} />
-      <directionalLight position={[5, 3, 5]} intensity={1.4} color="#fff8f0" />
-      <directionalLight position={[-4, -2, -3]} intensity={0.22} color="#4FD1C5" />
-      <Stars radius={120} depth={60} count={3500} factor={4} saturation={0} fade speed={0.3} />
-      <Earth scrollProgress={scrollProgress} />
-      <Satellite />
-      <CameraRig scrollProgress={scrollProgress} />
-    </>
-  );
-}
-
-/* ── static SVG fallback ── */
-function StaticFallback() {
-  return (
-    <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "#0A0E14" }}>
-      <svg viewBox="0 0 320 320" width="320" height="320" aria-hidden="true">
-        <defs>
-          <radialGradient id="eg2" cx="38%" cy="33%" r="60%">
-            <stop offset="0%"   stopColor="#2d6a4f" />
-            <stop offset="45%"  stopColor="#1b4332" />
-            <stop offset="72%"  stopColor="#1C3A4A" />
-            <stop offset="100%" stopColor="#0d1b2a" />
-          </radialGradient>
-        </defs>
-        <circle cx="160" cy="160" r="130" fill="url(#eg2)" />
-        <circle cx="160" cy="160" r="130" fill="none" stroke="#4FD1C5" strokeWidth="0.8" opacity="0.4" />
-        <ellipse cx="160" cy="160" rx="130" ry="22" fill="none" stroke="#1E2A36" strokeWidth="0.5" />
-        <circle cx="245" cy="100" r="4" fill="#F2A93B" />
-        <line x1="160" y1="160" x2="245" y2="100" stroke="#F2A93B" strokeWidth="0.6" opacity="0.4" />
-      </svg>
-    </div>
-  );
-}
-
-/* ── exported Hero ── */
+/**
+ * Photorealistic 3D Earth Component using Vanilla Three.js
+ * - Real NASA Blue Marble photographic surface
+ * - Specular reflections on oceans & water bodies
+ * - Floating cloud layer with independent rotational velocity
+ * - Atmospheric Rayleigh scattering Fresnel rim glow
+ * - ISRO / Earth Observation Satellites with orbital trails
+ * - Interactive inertia-damped mouse/touch drag + auto-rotation
+ */
 export default function Hero({ scrollProgress = 0, reducedMotion = false }) {
-  const [hasWebGL, setHasWebGL] = useState(true);
-  const [hasError, setHasError] = useState(false);
+  const containerRef = useRef(null);
+  const canvasRef = useRef(null);
+  const [loaded, setLoaded] = useState(false);
+  const [webglError, setWebglError] = useState(false);
 
   useEffect(() => {
-    try {
-      const c = document.createElement("canvas");
-      if (!c.getContext("webgl2") && !c.getContext("webgl")) setHasWebGL(false);
-    } catch { setHasWebGL(false); }
-  }, []);
+    const container = containerRef.current;
+    const canvas = canvasRef.current;
+    if (!container || !canvas) return;
 
-  if (reducedMotion || !hasWebGL || hasError) return <StaticFallback />;
+    let animId = null;
+    let renderer = null;
+
+    try {
+      // 1. Scene setup
+      const scene = new THREE.Scene();
+
+      // 2. Camera setup
+      const width = container.clientWidth || 480;
+      const height = container.clientHeight || 480;
+      const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 1000);
+      camera.position.set(0, 0, 4.8);
+
+      // 3. Renderer setup
+      renderer = new THREE.WebGLRenderer({
+        canvas,
+        alpha: true,
+        antialias: true,
+        powerPreference: "high-performance",
+      });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.15;
+
+      // 4. Lighting
+      // Sunlight (directional light from upper-right)
+      const sunLight = new THREE.DirectionalLight(0xfff8ee, 2.4);
+      sunLight.position.set(6, 3.5, 4.5);
+      scene.add(sunLight);
+
+      // Deep space ambient fill
+      const ambientLight = new THREE.AmbientLight(0x1a2e4a, 0.7);
+      scene.add(ambientLight);
+
+      // Atmospheric back-rim light (cool cyan)
+      const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.6);
+      rimLight.position.set(-6, -2, -4);
+      scene.add(rimLight);
+
+      // 5. Earth Parent Pivot (tilted 23.4° for axial realism)
+      const earthPivot = new THREE.Group();
+      earthPivot.rotation.z = (23.4 * Math.PI) / 180;
+      earthPivot.rotation.x = 0.1;
+      scene.add(earthPivot);
+
+      // Texture loader
+      const textureLoader = new THREE.TextureLoader();
+
+      // Surface Map
+      const earthTex = textureLoader.load(earthMapUrl, () => setLoaded(true));
+      earthTex.colorSpace = THREE.SRGBColorSpace;
+      earthTex.anisotropy = 8;
+
+      // Specular Map (oceans shine, land is matte)
+      const specTex = textureLoader.load(earthSpecUrl);
+
+      // 6. Earth Mesh
+      const earthGeo = new THREE.SphereGeometry(1.65, 64, 64);
+      const earthMat = new THREE.MeshPhongMaterial({
+        map: earthTex,
+        specularMap: specTex,
+        specular: new THREE.Color(0x385577),
+        shininess: 18,
+        bumpScale: 0.02,
+      });
+      const earthMesh = new THREE.Mesh(earthGeo, earthMat);
+      earthPivot.add(earthMesh);
+
+      // 7. Clouds Layer
+      const cloudsTex = textureLoader.load(earthCloudsUrl);
+      cloudsTex.colorSpace = THREE.SRGBColorSpace;
+      const cloudsGeo = new THREE.SphereGeometry(1.668, 64, 64);
+      const cloudsMat = new THREE.MeshStandardMaterial({
+        map: cloudsTex,
+        transparent: true,
+        opacity: 0.42,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+      const cloudsMesh = new THREE.Mesh(cloudsGeo, cloudsMat);
+      earthPivot.add(cloudsMesh);
+
+      // 8. Atmospheric Glow (Custom Fresnel Shader)
+      const atmosVertexShader = `
+        varying vec3 vNormal;
+        varying vec3 vPosition;
+        void main() {
+          vNormal = normalize(normalMatrix * normal);
+          vPosition = (modelViewMatrix * vec4(position, 1.0)).xyz;
+          gl_Position = projectionMatrix * vec4(vPosition, 1.0);
+        }
+      `;
+      const atmosFragmentShader = `
+        varying vec3 vNormal;
+        varying vec3 vPosition;
+        void main() {
+          vec3 viewDir = normalize(-vPosition);
+          float fresnel = 1.0 - dot(viewDir, vNormal);
+          fresnel = pow(fresnel, 2.8);
+          vec3 glowColor = vec3(0.22, 0.68, 1.0); // Vibrant electric cyan
+          gl_FragColor = vec4(glowColor, fresnel * 0.75);
+        }
+      `;
+      const atmosGeo = new THREE.SphereGeometry(1.74, 48, 48);
+      const atmosMat = new THREE.ShaderMaterial({
+        vertexShader: atmosVertexShader,
+        fragmentShader: atmosFragmentShader,
+        blending: THREE.AdditiveBlending,
+        side: THREE.BackSide,
+        transparent: true,
+      });
+      const atmosMesh = new THREE.Mesh(atmosGeo, atmosMat);
+      earthPivot.add(atmosMesh);
+
+      // 9. Satellites & Orbital System
+      const satGroup = new THREE.Group();
+      scene.add(satGroup);
+
+      // Satellite 1: RISAT / SAR Radar Observation Satellite
+      const satBusGeo = new THREE.BoxGeometry(0.045, 0.024, 0.065);
+      const satBusMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.85, roughness: 0.2 });
+      const sat1 = new THREE.Mesh(satBusGeo, satBusMat);
+
+      // Solar Panels
+      const panelGeo = new THREE.BoxGeometry(0.12, 0.003, 0.046);
+      const panelMat = new THREE.MeshStandardMaterial({
+        color: 0x1d4ed8,
+        emissive: 0x1e40af,
+        emissiveIntensity: 0.4,
+        metalness: 0.5,
+        roughness: 0.3,
+      });
+      const pLeft = new THREE.Mesh(panelGeo, panelMat);
+      pLeft.position.set(-0.09, 0, 0);
+      const pRight = new THREE.Mesh(panelGeo, panelMat);
+      pRight.position.set(0.09, 0, 0);
+      sat1.add(pLeft);
+      sat1.add(pRight);
+
+      // SAR Antenna Dish
+      const dishGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.005, 16);
+      const dishMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.9, roughness: 0.2 });
+      const dish = new THREE.Mesh(dishGeo, dishMat);
+      dish.position.set(0, 0.02, 0);
+      sat1.add(dish);
+
+      satGroup.add(sat1);
+
+      // Orbital Trail Curve
+      const trailCount = 100;
+      const trailPositions = new Float32Array(trailCount * 3);
+      const trailColors = new Float32Array(trailCount * 3);
+      for (let i = 0; i < trailCount; i++) {
+        const alpha = i / trailCount;
+        trailColors[i * 3 + 0] = 0.22 + alpha * 0.78; // gold/orange fade
+        trailColors[i * 3 + 1] = 0.65;
+        trailColors[i * 3 + 2] = 0.98;
+      }
+      const trailGeo = new THREE.BufferGeometry();
+      trailGeo.setAttribute("position", new THREE.BufferAttribute(trailPositions, 3));
+      trailGeo.setAttribute("color", new THREE.BufferAttribute(trailColors, 3));
+
+      const trailMat = new THREE.LineBasicMaterial({
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.65,
+        blending: THREE.AdditiveBlending,
+      });
+      const trailLine = new THREE.Line(trailGeo, trailMat);
+      satGroup.add(trailLine);
+
+      // 10. Interactive Drag to Rotate with Inertia
+      let isDragging = false;
+      let prevPointer = { x: 0, y: 0 };
+      let velocity = { x: 0.003, y: 0 };
+
+      const onPointerDown = (e) => {
+        isDragging = true;
+        prevPointer = { x: e.clientX, y: e.clientY };
+      };
+
+      const onPointerMove = (e) => {
+        if (!isDragging) return;
+        const deltaX = e.clientX - prevPointer.x;
+        const deltaY = e.clientY - prevPointer.y;
+        prevPointer = { x: e.clientX, y: e.clientY };
+
+        velocity.x = deltaX * 0.005;
+        velocity.y = deltaY * 0.005;
+
+        earthMesh.rotation.y += velocity.x;
+        earthPivot.rotation.x += velocity.y;
+      };
+
+      const onPointerUp = () => {
+        isDragging = false;
+      };
+
+      const dom = canvas;
+      dom.addEventListener("pointerdown", onPointerDown);
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerup", onPointerUp);
+
+      // 11. Resize handling
+      const resizeObserver = new ResizeObserver(() => {
+        if (!container || !renderer) return;
+        const w = container.clientWidth;
+        const h = container.clientHeight;
+        if (w === 0 || h === 0) return;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      });
+      resizeObserver.observe(container);
+
+      // 12. Animation Loop
+      let t = 0;
+      let trailIndex = 0;
+      const history = [];
+
+      const animate = () => {
+        animId = requestAnimationFrame(animate);
+
+        // Constant gentle rotation if not dragging
+        if (!isDragging && !reducedMotion) {
+          velocity.x *= 0.95;
+          velocity.y *= 0.95;
+          earthMesh.rotation.y += 0.0018 + velocity.x;
+          cloudsMesh.rotation.y += 0.0024 + velocity.x * 1.1;
+          earthPivot.rotation.x += velocity.y;
+        }
+
+        // Satellite Orbital Mechanics
+        t += 0.014;
+        const orbitR = 2.45;
+        const orbitInc = 0.72; // ~41° inclination
+        const satX = orbitR * Math.cos(t);
+        const satY = orbitR * Math.sin(t) * Math.sin(orbitInc);
+        const satZ = orbitR * Math.sin(t) * Math.cos(orbitInc);
+
+        sat1.position.set(satX, satY, satZ);
+        sat1.lookAt(
+          satX - Math.sin(t),
+          satY + Math.cos(t) * Math.sin(orbitInc),
+          satZ + Math.cos(t) * Math.cos(orbitInc)
+        );
+
+        // Update trail buffer
+        history.push(new THREE.Vector3(satX, satY, satZ));
+        if (history.length > trailCount) history.shift();
+
+        const posAttr = trailGeo.attributes.position;
+        for (let i = 0; i < history.length; i++) {
+          posAttr.setXYZ(i, history[i].x, history[i].y, history[i].z);
+        }
+        for (let i = history.length; i < trailCount; i++) {
+          posAttr.setXYZ(i, satX, satY, satZ);
+        }
+        posAttr.needsUpdate = true;
+
+        // Camera zoom reaction based on scrollProgress
+        const targetZ = 4.8 - (scrollProgress || 0) * 1.8;
+        camera.position.z += (targetZ - camera.position.z) * 0.08;
+
+        renderer.render(scene, camera);
+      };
+
+      animate();
+
+      return () => {
+        if (animId) cancelAnimationFrame(animId);
+        dom.removeEventListener("pointerdown", onPointerDown);
+        window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("pointerup", onPointerUp);
+        resizeObserver.disconnect();
+
+        if (renderer) {
+          renderer.dispose();
+        }
+        earthGeo.dispose();
+        earthMat.dispose();
+        cloudsGeo.dispose();
+        cloudsMat.dispose();
+        atmosGeo.dispose();
+        atmosMat.dispose();
+        satBusGeo.dispose();
+        panelGeo.dispose();
+        dishGeo.dispose();
+        trailGeo.dispose();
+      };
+    } catch (err) {
+      console.error("[SatQuery] WebGL Globe Initialization Failed:", err);
+      setWebglError(true);
+    }
+  }, [scrollProgress, reducedMotion]);
+
+  if (webglError) {
+    return (
+      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <img
+          src={earthMapUrl}
+          alt="Earth"
+          style={{ width: "80%", borderRadius: "50%", boxShadow: "0 0 40px rgba(56,189,248,0.3)" }}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }}>
-      <Canvas
-        camera={{ position: [0, 0, 4], fov: 45 }}
-        dpr={[1, Math.min(window.devicePixelRatio, 1.5)]}
-        style={{ background: "transparent" }}
-        gl={{ antialias: true, alpha: true, powerPreference: "low-power" }}
-        onError={() => setHasError(true)}
-      >
-        <Suspense fallback={null}>
-          <GlobeScene scrollProgress={scrollProgress} />
-        </Suspense>
-      </Canvas>
+    <div
+      ref={containerRef}
+      style={{
+        width: "100%",
+        height: "100%",
+        position: "absolute",
+        inset: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "grab",
+        userSelect: "none",
+      }}
+      title="Click and drag to rotate the 3D Earth"
+    >
+      <canvas
+        ref={canvasRef}
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "block",
+          outline: "none",
+        }}
+      />
     </div>
   );
 }

@@ -5,10 +5,10 @@
  */
 
 const C = {
-  text: "#EDF2F7", dim: "#8899AA", faint: "#3D5068",
-  optical: "#F0A847", sar: "#38BDF8", change: "#F472B6",
-  good: "#4ADE80", warn: "#FBBF24", border: "#1C2A3A",
-  raised: "#151F2E", panel: "#111827",
+  text: "#0F172A", dim: "#475569", faint: "#94A3B8",
+  optical: "#B45309", sar: "#0284C7", change: "#DB2777",
+  good: "#16A34A", warn: "#D97706", border: "#E2E8F0",
+  raised: "#F1F5F9", panel: "#FFFFFF",
 };
 const mono = { fontFamily: "'JetBrains Mono', 'Fira Code', monospace" };
 const disp = { fontFamily: "'Inter', 'Space Grotesk', sans-serif" };

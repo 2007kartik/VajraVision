@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import {
   Satellite, Radio, Upload, Play,
   CheckCircle2, Circle, Download, GitCompare, Eye, Loader2,
@@ -10,11 +10,23 @@ import { classifyInput, validateImages, runSpecialistModel, generateSummary } fr
 import MarkdownRenderer from "./components/MarkdownRenderer.jsx";
 
 const C = {
-  bg: "#0B0F18", surface: "#0E1520", panel: "#111827", panelAlt: "#0D1320",
-  raised: "#151F2E", border: "#1C2A3A", borderLit: "#243444",
-  text: "#EDF2F7", dim: "#8899AA", faint: "#3D5068",
-  optical: "#F0A847", sar: "#38BDF8", change: "#F472B6",
-  good: "#4ADE80", warn: "#FBBF24", err: "#F87171",
+  bg:        "#F8FAFC",
+  surface:   "#FFFFFF",
+  panel:     "#FFFFFF",
+  panelAlt:  "#F8FAFC",
+  raised:    "#F1F5F9",
+  border:    "#E2E8F0",
+  borderLit: "#CBD5E1",
+  text:      "#0F172A",
+  dim:       "#475569",
+  faint:     "#94A3B8",
+  accent:    "#2563EB",
+  optical:   "#B45309",
+  sar:       "#0369A1",
+  change:    "#6D28D9",
+  good:      "#047857",
+  warn:      "#D97706",
+  err:       "#DC2626",
 };
 const mono = { fontFamily: "'JetBrains Mono', monospace" };
 const sans = { fontFamily: "'Inter', 'Space Grotesk', sans-serif" };
@@ -48,7 +60,7 @@ function buildSteps(taskType) {
 }
 
 function SectionLabel({ children }) {
-  return <div style={{ ...mono, fontSize: 10, letterSpacing: 1.2, textTransform: "uppercase", color: C.faint, marginBottom: 10 }}>{children}</div>;
+  return <div style={{ ...mono, fontSize: 10, letterSpacing: 1.2, textTransform: "uppercase", color: C.faint, marginBottom: 10, fontWeight: 600 }}>{children}</div>;
 }
 
 function Pill({ label, color }) {
@@ -165,7 +177,7 @@ export default function Console() {
 
       const sum = await generateSummary(clf.taskType, clf.specialist, query, ans, val);
       setSummary(sum); setPhase("done");
-    } catch (err) { console.error(err); setErrorMsg((err.message || "Unknown error").replace(/gemini|google|generative.?ai/gi, "VLM")); setPhase("error"); }
+    } catch (err) { console.error(err); setErrorMsg(err.message || "Unknown error"); setPhase("error"); }
   };
 
   const taskMeta   = classification ? TASK_META[classification.taskType] : null;
@@ -182,7 +194,7 @@ export default function Console() {
         .cfade { animation: cfade .35s ease forwards; }
         @keyframes cfade { from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)} }
         .cspulse { animation: ${reducedMotion ? "none" : "cspulse 1.1s ease-in-out infinite"}; }
-        @keyframes cspulse { 0%,100%{box-shadow:0 0 0 0 ${C.change}33}50%{box-shadow:0 0 0 6px ${C.change}00} }
+        @keyframes cspulse { 0%,100%{box-shadow:0 0 0 0 ${C.accent}33}50%{box-shadow:0 0 0 6px ${C.accent}00} }
         @media(max-width:1180px){.cgrid{grid-template-columns:300px 1fr!important}.cright{display:none!important}}
         @media(max-width:800px){.cgrid{grid-template-columns:1fr!important}}
       `}</style>
@@ -191,8 +203,8 @@ export default function Console() {
       <div style={{ borderBottom:`1px solid ${C.border}`, background:`${C.panelAlt}F0`, backdropFilter:"blur(10px)", position:"sticky", top:0, zIndex:10 }}>
         <div style={{ maxWidth:1440, margin:"0 auto", padding:"0 24px", height:56, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-            <div style={{ width:28, height:28, borderRadius:7, background:`linear-gradient(135deg,${C.optical},${C.change})`, display:"flex", alignItems:"center", justifyContent:"center" }}>
-              <Satellite size={14} color="#0B0F18" strokeWidth={2.5} />
+            <div style={{ width:28, height:28, borderRadius:7, background:`linear-gradient(135deg,${C.accent},#1D4ED8)`, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 2px 8px ${C.accent}25` }}>
+              <Satellite size={14} color="#FFFFFF" strokeWidth={2} />
             </div>
             <span style={{ fontWeight:700, fontSize:14, color:C.text }}>SatQuery AI</span>
             <span style={{ ...mono, fontSize:9.5, color:C.faint, border:`1px solid ${C.border}`, padding:"2px 6px", borderRadius:4 }}>console</span>
@@ -224,7 +236,7 @@ export default function Console() {
                 onDragLeave={()=>setDragging(false)}
                 onDrop={onDrop}
                 onClick={()=>fileInputRef.current?.click()}
-                style={{ border:`1.5px dashed ${dragging?C.change:files.length?C.borderLit:C.border}`, borderRadius:10, padding:"18px 14px", textAlign:"center", cursor:"pointer", background:dragging?`${C.change}08`:C.panelAlt, marginBottom:10, transition:"border-color .15s ease, background .15s ease" }}
+                style={{ border:`1.5px dashed ${dragging?C.accent:files.length?C.borderLit:C.border}`, borderRadius:10, padding:"18px 14px", textAlign:"center", cursor:"pointer", background:dragging?`${C.accent}08`:C.panelAlt, marginBottom:10, transition:"border-color .15s ease, background .15s ease" }}
               >
                 <ImagePlus size={20} color={C.faint} style={{ margin:"0 auto 8px", display:"block" }} />
                 <div style={{ fontSize:12.5, color:C.dim, fontWeight:500 }}>{files.length===0?"Drop images or click to browse":"Drop more or click to add"}</div>
@@ -267,7 +279,7 @@ export default function Console() {
                 style={{ width:"100%", resize:"none", background:C.panelAlt, border:`1px solid ${C.border}`, borderRadius:8, color:C.text, fontSize:13, padding:"10px 12px", fontFamily:"'Inter',sans-serif", lineHeight:1.65 }}
               />
               <button onClick={runQuery} disabled={busy||!query.trim()||files.length===0}
-                style={{ width:"100%", marginTop:10, padding:"11px 0", borderRadius:8, border:"none", background:busy||!query.trim()||files.length===0?C.raised:C.change, color:busy||!query.trim()||files.length===0?C.faint:"#1a0a14", fontWeight:700, fontSize:13, cursor:busy||!query.trim()||files.length===0?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, transition:"background .15s ease", letterSpacing:0.2 }}>
+                style={{ width:"100%", marginTop:10, padding:"11px 0", borderRadius:8, border:"none", background:busy||!query.trim()||files.length===0?C.raised:`${C.accent}`, color:busy||!query.trim()||files.length===0?C.faint:"#FFFFFF", fontWeight:700, fontSize:13, cursor:busy||!query.trim()||files.length===0?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, transition:"opacity .15s ease", letterSpacing:0.2, boxShadow:busy||!query.trim()||files.length===0?"none":`0 4px 16px ${C.accent}30` }}>
                 {busy?<><Loader2 size={14} className="cspin" />Processing…</>:<><Play size={14} fill="currentColor" />Analyse image</>}
               </button>
               {phase==="done" && (
@@ -295,7 +307,7 @@ export default function Console() {
 
           {phase==="idle" && (
             <div style={{ background:C.panel, border:`1px solid ${C.border}`, borderRadius:12, padding:"48px 28px", textAlign:"center" }}>
-              <div style={{ width:52, height:52, borderRadius:14, background:`linear-gradient(135deg,${C.optical}22,${C.change}22)`, border:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 18px" }}>
+              <div style={{ width:52, height:52, borderRadius:14, background:`linear-gradient(135deg,${C.optical}22,${C.accent}22)`, border:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 18px" }}>
                 <Satellite size={22} color={C.dim} />
               </div>
               <div style={{ fontSize:17, fontWeight:600, color:C.text, marginBottom:8 }}>Upload imagery and enter a query</div>
@@ -317,7 +329,7 @@ export default function Console() {
               <div style={{ padding:"14px 16px" }}>
                 {phase==="classifying"&&!classification && (
                   <div style={{ display:"flex", alignItems:"center", gap:10, color:C.dim, padding:"8px 0" }}>
-                    <Loader2 size={15} className="cspin" color={C.change} />
+                    <Loader2 size={15} className="cspin" color={C.accent} />
                     <span style={{ fontSize:13 }}>Classifying query and images…</span>
                   </div>
                 )}
@@ -349,9 +361,9 @@ export default function Console() {
           )}
 
           {(phase==="running"||phase==="done") && (
-            <div className="cfade" style={{ background:C.panel, border:`1px solid ${phase==="done"?C.change+"22":C.border}`, borderRadius:12, overflow:"hidden" }}>
+            <div className="cfade" style={{ background:C.panel, border:`1px solid ${phase==="done"?C.accent+"44":C.border}`, borderRadius:12, overflow:"hidden" }}>
               <div style={{ padding:"10px 16px", borderBottom:`1px solid ${C.border}`, background:C.panelAlt, display:"flex", alignItems:"center", gap:8 }}>
-                <Zap size={13} color={C.change} />
+                <Zap size={13} color={C.accent} />
                 <span style={{ ...mono, fontSize:11, color:C.dim, letterSpacing:0.4 }}>Specialist output</span>
                 {phase==="done"&&answer?.modelUsed && (
                   <span style={{ marginLeft:"auto", ...mono, fontSize:10, color:C.sar }}>{answer.modelUsed}</span>
@@ -360,7 +372,7 @@ export default function Console() {
               <div style={{ padding:"18px 20px" }}>
                 {busy&&!answer && (
                   <div style={{ display:"flex", alignItems:"center", gap:10, color:C.dim, padding:"24px 0", justifyContent:"center" }}>
-                    <Loader2 size={16} className="cspin" color={C.change} />
+                    <Loader2 size={16} className="cspin" color={C.accent} />
                     <span style={{ fontSize:13 }}>Running {taskMeta?.specialist||"specialist model"}…</span>
                   </div>
                 )}
@@ -428,7 +440,7 @@ export default function Console() {
         <div className="cright" style={{ display:"flex", flexDirection:"column", gap:12 }}>
           <div style={{ background:C.panel, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden" }}>
             <div style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 16px", borderBottom:`1px solid ${C.border}`, background:C.panelAlt }}>
-              <Activity size={13} color={busy?C.change:C.dim} />
+              <Activity size={13} color={busy?C.accent:C.dim} />
               <span style={{ ...mono, fontSize:11, color:C.dim, letterSpacing:0.4 }}>Agent execution trace</span>
             </div>
             <div style={{ padding:14, overflowY:"auto", maxHeight:440 }}>
@@ -443,18 +455,18 @@ export default function Console() {
                     const detail   = stepDetails[i]||s.detail;
                     return (
                       <div key={s.id} style={{ display:"flex", gap:12, position:"relative", paddingBottom:i===steps.length-1?0:20 }}>
-                        {i!==steps.length-1 && <div style={{ position:"absolute", left:9, top:22, bottom:0, width:1, background:isDone?C.change+"66":C.border, transition:"background .3s ease" }} />}
-                        <div className={isActive?"cspulse":""} style={{ width:20, height:20, borderRadius:"50%", flexShrink:0, marginTop:1, display:"flex", alignItems:"center", justifyContent:"center", background:isPending?"transparent":isActive?C.raised:C.change, border:`1.5px solid ${isPending?C.border:C.change}`, transition:"all .25s ease" }}>
-                          {isDone   && <CheckCircle2 size={11} color="#1a0a14" />}
-                          {isActive && <Circle size={7} color={C.change} fill={C.change} />}
+                        {i!==steps.length-1 && <div style={{ position:"absolute", left:9, top:22, bottom:0, width:1, background:isDone?C.accent+"44":C.border, transition:"background .3s ease" }} />}
+                        <div className={isActive?"cspulse":""} style={{ width:20, height:20, borderRadius:"50%", flexShrink:0, marginTop:1, display:"flex", alignItems:"center", justifyContent:"center", background:isPending?"transparent":isActive?C.accentLt||"#DBEAFE":C.accent, border:`1.5px solid ${isPending?C.border:C.accent}`, transition:"all .25s ease" }}>
+                          {isDone   && <CheckCircle2 size={11} color="#FFFFFF" />}
+                          {isActive && <Circle size={7} color={C.accent} fill={C.accent} />}
                         </div>
                         <div style={{ flex:1 }}>
                           <div style={{ fontSize:12, fontWeight:isActive?600:500, color:isPending?C.faint:C.text, display:"flex", alignItems:"center", gap:5, marginBottom:3 }}>
-                            {!isPending && <Icon size={10} color={isActive?C.change:isDone?C.good:C.faint} />}
+                            {!isPending && <Icon size={10} color={isActive?C.accent:isDone?C.good:C.faint} />}
                             {s.label}
                           </div>
                           {!isPending && <div style={{ fontSize:10.5, color:C.dim, ...mono, lineHeight:1.5 }}>{detail}</div>}
-                          {isDone&&i===0&&classification && <div style={{ marginTop:6 }}><Pill label={`${classification.taskType} · ${classification.confidence}%`} color={C.change} /></div>}
+                          {isDone&&i===0&&classification && <div style={{ marginTop:6 }}><Pill label={`${classification.taskType} · ${classification.confidence}%`} color={C.accent} /></div>}
                           {isDone&&i===1&&validation && <div style={{ marginTop:6 }}><Pill label={validation.compatible?"compatible ✓":validation.issues[0]} color={validation.compatible?C.good:C.warn} /></div>}
                           {isDone&&i===2&&classification && <div style={{ marginTop:6 }}><Pill label={classification.specialist} color={taskMeta?.color||C.optical} /></div>}
                         </div>

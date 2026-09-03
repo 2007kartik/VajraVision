@@ -1,22 +1,38 @@
 import { useRef, useState, useEffect, lazy, Suspense } from "react";
-import { ChevronRight, ChevronDown, Satellite, Menu, X as XIcon } from "lucide-react";
+import { ChevronRight, ChevronDown, Satellite, Menu, X as XIcon, Zap, Shield, Globe, Cpu } from "lucide-react";
 import CredibilityStrip from "./components/CredibilityStrip.jsx";
-import EvidenceReveal from "./components/EvidenceReveal.jsx";
 import Console from "./Console.jsx";
 import satOptical from "./assets/optical.jpg";
 import satSar from "./assets/sar.jpg";
 import satBitemporal from "./assets/bi-temporal.jpg";
 
-const Hero = lazy(() => import("./components/Hero.jsx"));
+import Hero from "./components/Hero.jsx";
 
-/* ── design tokens (hero / landing only) ── */
+/* ── design tokens — light mode ── */
 const C = {
-  bg: "#0B0F18", panel: "#111827", border: "#1C2A3A",
-  text: "#EDF2F7", dim: "#8899AA", faint: "#3D5068",
-  optical: "#F0A847", sar: "#38BDF8", change: "#F472B6", good: "#4ADE80",
+  bg:        "#FFFFFF",
+  bgAlt:     "#F8FAFC",
+  surface:   "#F1F5F9",
+  panel:     "#FFFFFF",
+  border:    "#E2E8F0",
+  borderLit: "#CBD5E1",
+  text:      "#0F172A",
+  dim:       "#475569",
+  faint:     "#94A3B8",
+  accent:    "#2563EB",   // primary blue
+  accentLt:  "#DBEAFE",   // blue tint
+  optical:   "#B45309",   // amber-700 (readable on white)
+  opticalLt: "#FEF3C7",
+  sar:       "#0369A1",   // sky-700
+  sarLt:     "#E0F2FE",
+  change:    "#6D28D9",   // violet-700
+  changeLt:  "#EDE9FE",
+  good:      "#047857",   // emerald-700
+  goodLt:    "#D1FAE5",
 };
+
 const mono  = { fontFamily: "'JetBrains Mono', 'Fira Code', monospace" };
-const disp  = { fontFamily: "'Inter', 'Space Grotesk', sans-serif" };
+const disp  = { fontFamily: "'Inter', system-ui, sans-serif" };
 
 function usePrefersReducedMotion() {
   const [v, setV] = useState(() =>
@@ -50,8 +66,8 @@ function Navbar({ reducedMotion }) {
   ];
 
   const linkStyle = {
-    ...mono, fontSize: 12, color: C.dim, textDecoration: "none",
-    padding: "6px 0", letterSpacing: 0.3,
+    ...disp, fontSize: 14, fontWeight: 500, color: C.dim,
+    textDecoration: "none", padding: "6px 0", letterSpacing: 0,
     transition: "color .15s ease",
   };
 
@@ -62,28 +78,33 @@ function Navbar({ reducedMotion }) {
         style={{
           position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
           borderBottom: `1px solid ${scrolled ? C.border : "transparent"}`,
-          background: scrolled ? `#0A0E14EE` : "transparent",
-          backdropFilter: scrolled ? "blur(10px)" : "none",
+          background: scrolled ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0)",
+          backdropFilter: scrolled ? "blur(12px)" : "none",
           transition: reducedMotion ? "none" : "background .3s ease, border-color .3s ease",
         }}
       >
         <div style={{
-          maxWidth: 1400, margin: "0 auto",
-          padding: "0 24px", height: 60,
+          maxWidth: 1320, margin: "0 auto",
+          padding: "0 24px", height: 64,
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
           {/* logo */}
           <a href="#" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
             <div style={{
-              width: 32, height: 32, borderRadius: 8,
-              background: `linear-gradient(135deg, ${C.optical}, ${C.change})`,
+              width: 34, height: 34, borderRadius: 9,
+              background: `linear-gradient(135deg, ${C.accent}, #1D4ED8)`,
               display: "flex", alignItems: "center", justifyContent: "center",
-              flexShrink: 0,
+              flexShrink: 0, boxShadow: `0 2px 8px ${C.accent}30`,
             }}>
-              <Satellite size={16} color="#0A0E14" strokeWidth={2.5} />
+              <Satellite size={17} color="#FFFFFF" strokeWidth={2} />
             </div>
-            <span style={{ ...disp, fontWeight: 700, fontSize: 15, color: C.text, letterSpacing: 0.2 }}>SatQuery AI</span>
-            <span style={{ ...mono, fontSize: 9.5, color: C.faint, border: `1px solid ${C.border}`, padding: "2px 6px", borderRadius: 4 }}>
+            <span style={{ ...disp, fontWeight: 700, fontSize: 15.5, color: C.text, letterSpacing: -0.3 }}>SatQuery AI</span>
+            <span style={{
+              ...mono, fontSize: 10, color: C.faint,
+              border: `1px solid ${C.border}`,
+              background: C.bgAlt,
+              padding: "2px 7px", borderRadius: 5,
+            }}>
               ISRO / SAC
             </span>
           </a>
@@ -104,29 +125,30 @@ function Navbar({ reducedMotion }) {
           </div>
 
           {/* CTA + mobile toggle */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <a
               href="#console"
               style={{
-                ...mono, fontSize: 12, fontWeight: 700,
-                background: C.change, color: "#160A11",
-                padding: "8px 16px", borderRadius: 7,
-                textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6,
-                transition: "opacity .15s ease",
+                ...disp, fontSize: 13.5, fontWeight: 600,
+                background: C.accent, color: "#FFFFFF",
+                padding: "9px 20px", borderRadius: 8,
+                textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 7,
+                transition: "opacity .15s ease, transform .15s ease, box-shadow .15s ease",
                 whiteSpace: "nowrap",
+                boxShadow: `0 1px 3px ${C.accent}25, 0 4px 12px ${C.accent}20`,
               }}
-              onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
-              onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+              onMouseEnter={e => { e.currentTarget.style.opacity = "0.92"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+              onMouseLeave={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; }}
             >
-              Open console <ChevronRight size={12} />
+              Open console <ChevronRight size={13} strokeWidth={2.5} />
             </a>
             <button
               className="nav-mobile-btn"
               aria-label={mobileOpen ? "Close menu" : "Open menu"}
               onClick={() => setMobileOpen(o => !o)}
-              style={{ background: "none", border: "none", cursor: "pointer", color: C.dim, display: "none", padding: 4 }}
+              style={{ background: "none", border: `1px solid ${C.border}`, cursor: "pointer", color: C.dim, display: "none", padding: 7, borderRadius: 7 }}
             >
-              {mobileOpen ? <XIcon size={20} /> : <Menu size={20} />}
+              {mobileOpen ? <XIcon size={18} /> : <Menu size={18} />}
             </button>
           </div>
         </div>
@@ -134,15 +156,15 @@ function Navbar({ reducedMotion }) {
         {/* mobile drawer */}
         {mobileOpen && (
           <div style={{
-            background: "#0A0E14F5", borderTop: `1px solid ${C.border}`,
-            padding: "16px 24px 24px",
+            background: C.panel, borderTop: `1px solid ${C.border}`,
+            padding: "16px 24px 24px", boxShadow: "0 12px 32px rgba(0,0,0,0.08)",
           }}>
             {navLinks.map(l => (
               <a
                 key={l.label}
                 href={l.href}
                 onClick={() => setMobileOpen(false)}
-                style={{ ...linkStyle, display: "block", padding: "12px 0", borderBottom: `1px solid ${C.border}`, color: C.text }}
+                style={{ ...linkStyle, display: "block", padding: "13px 0", borderBottom: `1px solid ${C.border}`, color: C.text }}
               >
                 {l.label}
               </a>
@@ -150,7 +172,6 @@ function Navbar({ reducedMotion }) {
           </div>
         )}
       </nav>
-      {/* extra responsive styles for navbar */}
       <style>{`
         @media (max-width: 680px) {
           .nav-desktop { display: none !important; }
@@ -162,235 +183,482 @@ function Navbar({ reducedMotion }) {
 }
 
 
-function useScrollProgress(ref) {
-  const [progress, setProgress] = useState(0);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const update = () => {
-      const rect = el.getBoundingClientRect();
-      const total = el.offsetHeight - window.innerHeight;
-      if (total <= 0) { setProgress(0); return; }
-      const scrolled = -rect.top;
-      setProgress(Math.min(1, Math.max(0, scrolled / total)));
-    };
-    window.addEventListener("scroll", update, { passive: true });
-    update();
-    return () => window.removeEventListener("scroll", update);
-  }, []);
-  return progress;
-}
+/* ── Interactive Satellite Modality Showcase (How It Works) ── */
+function HowItWorks({ reducedMotion }) {
+  const [activeTab, setActiveTab] = useState("optical");
+  const [showOverlay, setShowOverlay] = useState(true);
 
-/* ── stat badge for the scroll section ── */
-function ScrollCaption({ text, visible }) {
-  return (
-    <div style={{
-      ...mono, fontSize: 11, color: C.optical, letterSpacing: 1,
-      opacity: visible ? 1 : 0, transition: "opacity .5s ease",
-      textTransform: "uppercase",
-    }}>
-      {text}
-    </div>
-  );
-}
+  const MODALITIES = {
+    optical: {
+      id: "optical",
+      label: "Optical (High-Res)",
+      badge: "RGB + NIR · 0.5m GSD",
+      badgeColor: "#F59E0B",
+      badgeBg: "rgba(245,158,11,0.15)",
+      image: satOptical,
+      sensor: "Cartosat-2 / Sentinel-2 MSI",
+      resolution: "0.5m / pixel (Very High Resolution)",
+      bands: "B4 (Red), B3 (Green), B2 (Blue), B8 (NIR)",
+      target: "Marina Bay & Coastal Infrastructure",
+      coords: "1.29027° N, 103.851959° E",
+      specialist: "RS-VQA (BigEarthNet Specialist)",
+      vlmDecision: "Detected commercial stadium complex, transit bridge, deep-water port approach.",
+      confidence: "98.4%",
+      detections: [
+        { label: "Stadium Complex", conf: "0.98", x: "54%", y: "15%", w: "26%", h: "35%", color: "#F59E0B" },
+        { label: "Transit Bridge", conf: "0.96", x: "8%", y: "20%", w: "45%", h: "40%", color: "#38BDF8" },
+      ],
+    },
+    sar: {
+      id: "sar",
+      label: "SAR (Synthetic Aperture Radar)",
+      badge: "C-Band Microwave · Cloud-Penetrating",
+      badgeColor: "#38BDF8",
+      badgeBg: "rgba(56,189,248,0.15)",
+      image: satSar,
+      sensor: "RISAT-1A / Sentinel-1 C-Band",
+      resolution: "1.0m / pixel (Synthetic Aperture)",
+      bands: "VV + VH dual-polarization backscatter (dB)",
+      target: "Petrochemical & Maritime Port Complex",
+      coords: "18.9220° N, 72.8347° E",
+      specialist: "Optical–SAR Fusion Specialist",
+      vlmDecision: "Penetrated haze/smoke. Identified high dielectric metal storage tanks and tanker moorings.",
+      confidence: "96.8%",
+      detections: [
+        { label: "Refinery Tanks", conf: "0.97", x: "22%", y: "45%", w: "38%", h: "40%", color: "#38BDF8" },
+        { label: "Container Berths", conf: "0.94", x: "60%", y: "10%", w: "32%", h: "60%", color: "#A78BFA" },
+      ],
+    },
+    bitemporal: {
+      id: "bitemporal",
+      label: "Bi-Temporal (Change Detection)",
+      badge: "T1 (2022) vs T2 (2024) · Siamese Diff",
+      badgeColor: "#A78BFA",
+      badgeBg: "rgba(167,139,250,0.15)",
+      image: satBitemporal,
+      sensor: "Bi-temporal Optical Pair (Multi-date)",
+      resolution: "0.8m Co-registered Grid",
+      bands: "Temporal Feature Differencing Matrix",
+      target: "Urban Expansion & Land Conversion",
+      coords: "22.9068° S, 43.1729° W",
+      specialist: "Change-VQA (CDVQA Specialist)",
+      vlmDecision: "Quantified +14% built-up surface area increase from baseline T1 to target T2.",
+      confidence: "97.2%",
+      detections: [
+        { label: "New Construction (+14%)", conf: "0.97", x: "52%", y: "52%", w: "44%", h: "44%", color: "#A78BFA" },
+        { label: "Cleared Forest Patch", conf: "0.93", x: "4%", y: "4%", w: "44%", h: "44%", color: "#10B981" },
+      ],
+    },
+  };
 
-/* ── the big scroll-driven section ── */
-function ScrollZoom({ reducedMotion }) {
-  const wrapRef = useRef();
-  const progress = useScrollProgress(wrapRef);
-
-  // three phases: 0-0.33 = "from orbit", 0.33-0.66 = "to pixels", 0.66-1 = "to answers"
-  const phase = progress < 0.33 ? 0 : progress < 0.66 ? 1 : 2;
-  const captions = ["From orbit", "To pixels", "To answers"];
-
-  // tile opacity rises after first third
-  const tileOpacity = Math.min(1, Math.max(0, (progress - 0.3) / 0.25));
-  // SAR crossfade in second third
-  const sarOpacity = Math.min(1, Math.max(0, (progress - 0.5) / 0.2));
-  // evidence reveal in final third
-  const evidenceVisible = progress > 0.72;
-
-  // scroll height: 300vh (gives enough travel)
-  const scrollHeight = reducedMotion ? "100vh" : "300vh";
+  const current = MODALITIES[activeTab];
 
   return (
     <div
-      ref={wrapRef}
-      style={{ position: "relative", height: scrollHeight, background: C.bg }}
-      aria-label="Scroll-driven satellite imagery demonstration"
+      id="how-it-works"
+      style={{
+        position: "relative",
+        background: "#080C14",
+        color: "#F8FAFC",
+        padding: "96px 24px",
+        overflow: "hidden",
+        borderTop: "1px solid #1E293B",
+        borderBottom: "1px solid #1E293B",
+      }}
     >
-      {/* sticky frame */}
-      <div style={{ position: "sticky", top: 0, height: "100vh", overflow: "hidden" }}>
+      {/* subtle space glow background */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage: `
+            radial-gradient(circle at 20% 30%, rgba(37,99,235,0.08) 0%, transparent 50%),
+            radial-gradient(circle at 80% 70%, rgba(109,40,217,0.08) 0%, transparent 50%)
+          `,
+          pointerEvents: "none",
+        }}
+      />
 
-        {/* 3D globe canvas */}
-        <div style={{
-          position: "absolute", inset: 0,
-          opacity: reducedMotion ? 0 : Math.max(0, 1 - tileOpacity * 2),
-          transition: "opacity .1s linear",
-        }}>
-          <Suspense fallback={null}>
-            <Hero scrollProgress={progress} reducedMotion={reducedMotion} />
-          </Suspense>
+      <div style={{ maxWidth: 1280, margin: "0 auto", position: "relative", zIndex: 2 }}>
+        {/* Section Header */}
+        <div style={{ textAlign: "center", maxWidth: 760, margin: "0 auto 48px" }}>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              ...mono,
+              fontSize: 11,
+              color: "#38BDF8",
+              letterSpacing: 1.2,
+              textTransform: "uppercase",
+              padding: "6px 14px",
+              borderRadius: 20,
+              background: "rgba(56,189,248,0.1)",
+              border: "1px solid rgba(56,189,248,0.25)",
+              marginBottom: 20,
+            }}
+          >
+            <Satellite size={14} color="#38BDF8" />
+            Sensor Telemetry & Multimodal Analysis
+          </div>
+
+          <h2
+            style={{
+              ...disp,
+              fontSize: "clamp(28px, 3.6vw, 44px)",
+              fontWeight: 800,
+              letterSpacing: -1.2,
+              lineHeight: 1.15,
+              margin: "0 0 16px",
+              color: "#FFFFFF",
+            }}
+          >
+            How SatQuery AI Reads Orbit-to-Pixel Data
+          </h2>
+
+          <p style={{ fontSize: 16, color: "#94A3B8", lineHeight: 1.7, margin: 0 }}>
+            Inspect real Earth Observation payloads from <span style={{ color: "#F8FAFC", fontWeight: 600 }}>src/assets</span>.
+            Switch between sensor modalities to examine how our specialized VLM pipeline decodes optical detail,
+            radar backscatter, and temporal land cover changes.
+          </p>
         </div>
 
-        {/* static fallback for reduced-motion */}
-        {reducedMotion && (
-          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <StaticEarth />
-          </div>
-        )}
-
-        {/* satellite tile crossfade — three phases: optical → SAR → bi-temporal */}
-        <div style={{
-          position: "absolute", inset: 0,
-          opacity: tileOpacity,
-          transition: reducedMotion ? "none" : "opacity .3s linear",
-        }}>
-          {/* OPTICAL */}
-          <div style={{ position: "absolute", inset: 0, opacity: Math.max(0, 1 - sarOpacity * 2), transition: reducedMotion ? "none" : "opacity .7s ease" }}>
-            <RealSatTile src={satOptical} label="OPTICAL" labelColor={C.optical} annotation={false} />
-          </div>
-          {/* SAR */}
-          <div style={{ position: "absolute", inset: 0, opacity: Math.min(1, sarOpacity * 2) * Math.max(0, 1 - (sarOpacity - 0.5) * 4), transition: reducedMotion ? "none" : "opacity .7s ease" }}>
-            <RealSatTile src={satSar} label="SAR" labelColor={C.sar} annotation={false} />
-          </div>
-          {/* BI-TEMPORAL */}
-          <div style={{ position: "absolute", inset: 0, opacity: Math.max(0, (sarOpacity - 0.5) * 4), transition: reducedMotion ? "none" : "opacity .7s ease" }}>
-            <RealSatTile src={satBitemporal} label="BI-TEMPORAL" labelColor={C.change} annotation={evidenceVisible} />
-          </div>
-
-          {/* vignette edges */}
-          <div style={{
-            position: "absolute", inset: 0,
-            background: "radial-gradient(ellipse 90% 85% at 50% 50%, transparent 45%, rgba(10,14,20,0.75) 100%)",
-            pointerEvents: "none",
-          }} />
-
-          {/* modality badge */}
-          <div style={{
-            position: "absolute", top: 20, left: 24,
-            ...mono, fontSize: 11, padding: "5px 12px", borderRadius: 6,
-            background: sarOpacity > 0.75 ? `${C.change}22` : sarOpacity > 0.25 ? `${C.sar}22` : `${C.optical}22`,
-            border: `1px solid ${sarOpacity > 0.75 ? C.change+"66" : sarOpacity > 0.25 ? C.sar+"66" : C.optical+"66"}`,
-            color: sarOpacity > 0.75 ? C.change : sarOpacity > 0.25 ? C.sar : C.optical,
-            backdropFilter: "blur(6px)", transition: "all .4s ease", zIndex: 2,
-          }}>
-            {sarOpacity > 0.75 ? "BI-TEMPORAL · Change detection" : sarOpacity > 0.25 ? "SAR · Synthetic Aperture Radar" : "OPTICAL · High-resolution"}
-          </div>
-
-          {/* coordinates */}
-          <div style={{
-            position: "absolute", bottom: 100, right: 24,
-            ...mono, fontSize: 10, color: "rgba(255,255,255,0.45)", zIndex: 2,
-          }}>
-            {sarOpacity > 0.75 ? "T1 / T2 · change pair" : sarOpacity > 0.25 ? "C-band · backscatter" : "22.91°S, 43.23°W"}
-          </div>
+        {/* Modality Selector Tabs */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: 12,
+            marginBottom: 36,
+            flexWrap: "wrap",
+          }}
+        >
+          {Object.values(MODALITIES).map((m) => {
+            const isSelected = activeTab === m.id;
+            return (
+              <button
+                key={m.id}
+                onClick={() => setActiveTab(m.id)}
+                style={{
+                  ...disp,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  padding: "12px 22px",
+                  borderRadius: 10,
+                  border: `1px solid ${isSelected ? m.badgeColor : "#1E293B"}`,
+                  background: isSelected ? m.badgeBg : "#0F172A",
+                  color: isSelected ? "#FFFFFF" : "#94A3B8",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  transition: "all 0.2s ease",
+                  boxShadow: isSelected ? `0 4px 20px ${m.badgeColor}22` : "none",
+                }}
+              >
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    background: m.badgeColor,
+                    boxShadow: isSelected ? `0 0 8px ${m.badgeColor}` : "none",
+                  }}
+                />
+                {m.label}
+              </button>
+            );
+          })}
         </div>
 
-        {/* evidence reveal panel */}
-        <div style={{
-          position: "absolute", inset: 0,
-          display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 24,
-          padding: "0 24px",
-          pointerEvents: evidenceVisible ? "auto" : "none",
-        }}>
-          <EvidenceReveal visible={evidenceVisible} />
-        </div>
+        {/* Main Display Grid */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.2fr 0.8fr",
+            gap: 32,
+            background: "#0B111E",
+            border: "1px solid #1E293B",
+            borderRadius: 16,
+            padding: 24,
+            boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
+          }}
+          className="telemetry-grid"
+        >
+          {/* LEFT: Satellite Imagery Viewport */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {/* Viewport Header HUD */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "8px 14px",
+                background: "#070A10",
+                borderRadius: 8,
+                border: "1px solid #1E293B",
+                ...mono,
+                fontSize: 11,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ color: current.badgeColor, fontWeight: 700 }}>● LIVE FEED</span>
+                <span style={{ color: "#64748B" }}>|</span>
+                <span style={{ color: "#CBD5E1" }}>{current.sensor}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <span style={{ color: "#94A3B8" }}>{current.coords}</span>
+                <button
+                  onClick={() => setShowOverlay(!showOverlay)}
+                  style={{
+                    background: showOverlay ? "rgba(37,99,235,0.2)" : "rgba(255,255,255,0.05)",
+                    border: `1px solid ${showOverlay ? "#3B82F6" : "#334155"}`,
+                    color: showOverlay ? "#60A5FA" : "#94A3B8",
+                    padding: "3px 9px",
+                    borderRadius: 5,
+                    cursor: "pointer",
+                    fontSize: 10,
+                  }}
+                >
+                  {showOverlay ? "AI Overlays: ON" : "AI Overlays: OFF"}
+                </button>
+              </div>
+            </div>
 
-        {/* caption overlay (always in DOM for screen readers) */}
-        <div style={{ position: "absolute", bottom: 80, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 32, pointerEvents: "none" }} aria-live="polite" aria-atomic="true">
-          {captions.map((c, i) => (
-            <ScrollCaption key={c} text={c} visible={phase === i || reducedMotion} />
-          ))}
-        </div>
+            {/* Actual Satellite Image from src/assets */}
+            <div
+              style={{
+                position: "relative",
+                width: "100%",
+                height: 440,
+                borderRadius: 10,
+                overflow: "hidden",
+                border: "1px solid #1E293B",
+                background: "#020408",
+              }}
+            >
+              <img
+                src={current.image}
+                alt={current.label}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  display: "block",
+                }}
+              />
 
-        {/* scroll hint (only at top) */}
-        <div style={{
-          position: "absolute", bottom: 28, left: "50%", transform: "translateX(-50%)",
-          opacity: progress < 0.05 ? 1 : 0, transition: "opacity .3s ease",
-          display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-          animation: reducedMotion ? "none" : "nudge 2s ease-in-out infinite",
-        }}>
-          <span style={{ ...mono, fontSize: 10, color: C.faint }}>scroll</span>
-          <ChevronDown size={14} color={C.faint} />
+              {/* Grid overlay lines */}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  backgroundImage: `
+                    linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px)
+                  `,
+                  backgroundSize: "40px 40px",
+                  pointerEvents: "none",
+                }}
+              />
+
+              {/* AI Detections & Bounding Boxes */}
+              {showOverlay &&
+                current.detections.map((det, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      position: "absolute",
+                      left: det.x,
+                      top: det.y,
+                      width: det.w,
+                      height: det.h,
+                      border: `2px solid ${det.color}`,
+                      borderRadius: 4,
+                      boxShadow: `0 0 12px ${det.color}55, inset 0 0 12px ${det.color}22`,
+                      pointerEvents: "none",
+                      transition: "all 0.4s ease",
+                    }}
+                  >
+                    <span
+                      style={{
+                        position: "absolute",
+                        top: -18,
+                        left: -2,
+                        background: det.color,
+                        color: "#000000",
+                        ...mono,
+                        fontSize: 10,
+                        fontWeight: 700,
+                        padding: "1px 6px",
+                        borderRadius: 3,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {det.label} · {det.conf}
+                    </span>
+                  </div>
+                ))}
+
+              {/* Bottom Telemetry HUD */}
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 12,
+                  left: 12,
+                  right: 12,
+                  padding: "8px 14px",
+                  background: "rgba(11,17,30,0.85)",
+                  backdropFilter: "blur(8px)",
+                  borderRadius: 6,
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  ...mono,
+                  fontSize: 10,
+                  color: "#94A3B8",
+                }}
+              >
+                <span>RES: {current.resolution}</span>
+                <span>BANDS: {current.bands}</span>
+                <span style={{ color: "#34D399" }}>CLOUD COVER: 0.0%</span>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT: VLM Analysis & Decision Card */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              background: "#070A12",
+              border: "1px solid #1E293B",
+              borderRadius: 12,
+              padding: 24,
+            }}
+          >
+            <div>
+              {/* Specialist Routing Header */}
+              <div style={{ ...mono, fontSize: 11, color: "#64748B", marginBottom: 6 }}>
+                ROUTED SPECIALIST MODEL
+              </div>
+              <div
+                style={{
+                  ...disp,
+                  fontSize: 19,
+                  fontWeight: 700,
+                  color: "#FFFFFF",
+                  marginBottom: 16,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                }}
+              >
+                <Cpu size={20} color={current.badgeColor} />
+                {current.specialist}
+              </div>
+
+              {/* Specialist Confidence Meter */}
+              <div style={{ marginBottom: 24, background: "#0B111E", padding: "12px 16px", borderRadius: 8, border: "1px solid #1E293B" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", ...mono, fontSize: 11, marginBottom: 8 }}>
+                  <span style={{ color: "#94A3B8" }}>Classification Confidence</span>
+                  <span style={{ color: "#10B981", fontWeight: 700 }}>{current.confidence}</span>
+                </div>
+                <div style={{ height: 6, width: "100%", background: "#1E293B", borderRadius: 3, overflow: "hidden" }}>
+                  <div
+                    style={{
+                      height: "100%",
+                      width: current.confidence,
+                      background: "linear-gradient(90deg, #3B82F6, #10B981)",
+                      borderRadius: 3,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* VLM Synthesis Evidence */}
+              <div style={{ ...mono, fontSize: 11, color: "#64748B", marginBottom: 8 }}>
+                AI SYNTHESIS & REASONING TRACE
+              </div>
+              <div
+                style={{
+                  padding: "14px 16px",
+                  background: "rgba(30,41,59,0.4)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: 8,
+                  fontSize: 13.5,
+                  color: "#E2E8F0",
+                  lineHeight: 1.6,
+                  marginBottom: 24,
+                }}
+              >
+                "{current.vlmDecision}"
+              </div>
+
+              {/* Sensor Technical Specifications */}
+              <div style={{ ...mono, fontSize: 11, color: "#64748B", marginBottom: 10 }}>
+                SENSOR TELEMETRY SPECS
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8, ...mono, fontSize: 11 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #1E293B", paddingBottom: 6 }}>
+                  <span style={{ color: "#94A3B8" }}>Platform:</span>
+                  <span style={{ color: "#F1F5F9" }}>{current.sensor}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #1E293B", paddingBottom: 6 }}>
+                  <span style={{ color: "#94A3B8" }}>Target Area:</span>
+                  <span style={{ color: "#F1F5F9" }}>{current.target}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #1E293B", paddingBottom: 6 }}>
+                  <span style={{ color: "#94A3B8" }}>Spectral Config:</span>
+                  <span style={{ color: "#F1F5F9" }}>{current.bands.split(",")[0]}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* CTA to jump to Console */}
+            <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid #1E293B" }}>
+              <a
+                href="#console"
+                style={{
+                  ...disp,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  width: "100%",
+                  padding: "12px",
+                  borderRadius: 8,
+                  background: "#2563EB",
+                  color: "#FFFFFF",
+                  fontWeight: 600,
+                  fontSize: 13.5,
+                  textDecoration: "none",
+                  boxShadow: "0 4px 14px rgba(37,99,235,0.3)",
+                  transition: "background 0.15s ease",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#1D4ED8")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "#2563EB")}
+              >
+                Analyze this sample in Console <ChevronRight size={14} />
+              </a>
+            </div>
+          </div>
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 900px) {
+          .telemetry-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   );
 }
 
-/* ── simple SVG tiles ── */
-/* ── real satellite imagery tiles — local assets ── */
-function RealSatTile({ src, label, labelColor, annotation }) {
-  const [loaded, setLoaded] = useState(false);
-  return (
-    <div style={{ position: "absolute", inset: 0 }}>
-      {/* placeholder while loading */}
-      {!loaded && (
-        <div style={{ position: "absolute", inset: 0, background: "#0C1219", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ width: 28, height: 28, border: `2px solid ${labelColor}44`, borderTopColor: labelColor, borderRadius: "50%", animation: "spin 1s linear infinite" }} />
-        </div>
-      )}
-      <img
-        src={src}
-        alt={label}
-        onLoad={() => setLoaded(true)}
-        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: loaded ? 1 : 0, transition: "opacity .4s ease" }}
-      />
-      {/* scan-line overlay to give it that satellite sensor feel */}
-      <div style={{
-        position: "absolute", inset: 0,
-        background: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px)",
-        pointerEvents: "none",
-      }} />
-      {/* annotation box on "to answers" phase */}
-      {annotation && loaded && (
-        <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0 }}>
-            <rect x="28%" y="22%" width="44%" height="46%"
-              fill="none" stroke="#EF5DA8" strokeWidth="2.5" rx="4"
-              strokeDasharray="300"
-              style={{ strokeDashoffset: 0, transition: "stroke-dashoffset 1s ease" }}
-            />
-            <rect x="28%" y="14%" width="120" height="16" fill="#EF5DA8" rx="2" />
-            <text x="30%" y="24.5%" fontSize="11" fill="#160A11" fontFamily="'JetBrains Mono', monospace" fontWeight="700">
-              stadium · built-up · 0.97
-            </text>
-          </svg>
-        </div>
-      )}
-    </div>
-  );
-}
-      <rect x="10" y="20" width="150" height="90" fill="#5C7A3B" opacity="0.9" />
-/* ── reduced-motion static earth ── */
-function StaticEarth() {
-  return (
-    <svg viewBox="0 0 360 360" width="360" height="360" aria-hidden="true">
-      <defs>
-        <radialGradient id="sg" cx="38%" cy="33%" r="60%">
-          <stop offset="0%" stopColor="#2d6a4f" />
-          <stop offset="45%" stopColor="#1b4332" />
-          <stop offset="72%" stopColor="#1C3A4A" />
-          <stop offset="100%" stopColor="#0d1b2a" />
-        </radialGradient>
-        <radialGradient id="satm" cx="50%" cy="50%" r="55%">
-          <stop offset="72%" stopColor="transparent" />
-          <stop offset="100%" stopColor="#4FD1C518" />
-        </radialGradient>
-      </defs>
-      <circle cx="180" cy="180" r="148" fill="url(#sg)" />
-      <circle cx="180" cy="180" r="152" fill="url(#satm)" />
-      <circle cx="180" cy="180" r="148" fill="none" stroke="#4FD1C5" strokeWidth="0.8" opacity="0.35" />
-      <ellipse cx="180" cy="180" rx="148" ry="22" fill="none" stroke="#1E2A36" strokeWidth="0.6" opacity="0.5" />
-      <ellipse cx="180" cy="180" rx="148" ry="60" fill="none" stroke="#1E2A36" strokeWidth="0.5" opacity="0.35" />
-      <circle cx="285" cy="105" r="5" fill="#F2A93B" />
-      <line x1="180" y1="180" x2="285" y2="105" stroke="#F2A93B" strokeWidth="0.7" opacity="0.4" />
-    </svg>
-  );
-}
-
-/* ── hero headline section — left text / right globe ── */
+/* ── hero section ── */
 function HeroSection({ reducedMotion }) {
   const [show, setShow] = useState(false);
   useEffect(() => {
@@ -402,56 +670,91 @@ function HeroSection({ reducedMotion }) {
     <div style={{
       position: "relative", minHeight: "100vh", background: C.bg,
       display: "flex", alignItems: "center",
-      overflow: "hidden", paddingTop: 60,
+      overflow: "hidden", paddingTop: 64,
     }}>
-      <StarField />
+      {/* subtle mesh background */}
+      <div style={{
+        position: "absolute", inset: 0, zIndex: 0,
+        backgroundImage: `
+          radial-gradient(ellipse 70% 60% at 65% 50%, #EFF6FF 0%, transparent 70%),
+          radial-gradient(ellipse 40% 40% at 20% 70%, #F0FDF4 0%, transparent 60%)
+        `,
+        pointerEvents: "none",
+      }} />
+
+      {/* subtle dot grid */}
+      <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 0, opacity: 0.35 }} aria-hidden="true">
+        <defs>
+          <pattern id="dot-grid" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse">
+            <circle cx="1" cy="1" r="1" fill="#CBD5E1" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#dot-grid)" />
+      </svg>
 
       {/* content row */}
       <div style={{
         position: "relative", zIndex: 2,
-        maxWidth: 1400, margin: "0 auto", width: "100%",
-        padding: "0 24px",
+        maxWidth: 1320, margin: "0 auto", width: "100%",
+        padding: "64px 24px",
         display: "grid",
         gridTemplateColumns: "1fr 1fr",
-        gap: 48,
+        gap: 64,
         alignItems: "center",
-        minHeight: "calc(100vh - 60px)",
-      }}>
+        minHeight: "calc(100vh - 64px)",
+      }} className="hero-grid">
         {/* LEFT — headline */}
         <div style={{
           opacity: show ? 1 : 0,
-          transform: show ? "translateY(0)" : "translateY(20px)",
-          transition: reducedMotion ? "none" : "opacity .9s ease, transform .9s ease",
+          transform: show ? "translateY(0)" : "translateY(24px)",
+          transition: reducedMotion ? "none" : "opacity .8s ease, transform .8s ease",
         }}>
-          <div style={{ ...mono, fontSize: 11, color: C.optical, letterSpacing: 2, marginBottom: 20, textTransform: "uppercase" }}>
-            agentic vision-language assistant · earth observation
+          {/* eyebrow badge */}
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 7,
+            ...mono, fontSize: 11, color: C.accent,
+            letterSpacing: 0.5,
+            marginBottom: 24,
+            background: C.accentLt,
+            border: `1px solid #BFDBFE`,
+            padding: "5px 14px", borderRadius: 20,
+          }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.accent, display: "inline-block", animation: "spulse 2s ease-in-out infinite" }} />
+            Agentic vision-language assistant · Earth observation
           </div>
+
           <h1 style={{
-            ...disp, fontSize: "clamp(34px, 4.5vw, 64px)", fontWeight: 700,
-            lineHeight: 1.08, letterSpacing: -2, margin: "0 0 24px",
+            ...disp, fontSize: "clamp(36px, 4.8vw, 68px)", fontWeight: 800,
+            lineHeight: 1.06, letterSpacing: -2.5, margin: "0 0 24px",
             color: C.text,
           }}>
-            Ask your imagery<br />
-            <span style={{ color: C.optical }}>anything.</span>
+            Ask your<br />
+            satellite imagery<br />
+            <span style={{
+              background: `linear-gradient(135deg, ${C.accent}, #7C3AED)`,
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+            }}>anything.</span>
           </h1>
-          <p style={{ fontSize: 16, color: C.dim, lineHeight: 1.75, maxWidth: 480, marginBottom: 36 }}>
+
+          <p style={{ fontSize: 17, color: C.dim, lineHeight: 1.75, maxWidth: 480, marginBottom: 36 }}>
             One query. Any image type. SatQuery AI reads your satellite imagery —
             optical, SAR, or bi-temporal pairs — classifies your intent, and routes
             to the right specialist model automatically.
           </p>
 
-          {/* input-type pills */}
-          <div style={{ display: "flex", gap: 8, marginBottom: 36, flexWrap: "wrap" }}>
+          {/* input type pills */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 40, flexWrap: "wrap" }}>
             {[
-              { label: "Single image",        color: C.optical },
-              { label: "Optical + SAR pair",  color: C.sar },
-              { label: "Bi-temporal pair",    color: C.change },
-            ].map(({ label, color }) => (
+              { label: "Single image",       bg: C.opticalLt, color: C.optical, border: "#FDE68A" },
+              { label: "Optical + SAR pair", bg: C.sarLt,     color: C.sar,     border: "#BAE6FD" },
+              { label: "Bi-temporal pair",   bg: C.changeLt,  color: C.change,  border: "#C4B5FD" },
+            ].map(({ label, bg, color, border }) => (
               <span key={label} style={{
-                ...mono, fontSize: 11, color,
-                border: `1px solid ${color}44`,
-                background: `${color}10`,
-                padding: "5px 11px", borderRadius: 20,
+                ...mono, fontSize: 11.5, color, fontWeight: 500,
+                border: `1px solid ${border}`,
+                background: bg,
+                padding: "5px 13px", borderRadius: 20,
+                letterSpacing: 0.1,
               }}>{label}</span>
             ))}
           </div>
@@ -460,53 +763,82 @@ function HeroSection({ reducedMotion }) {
             <a
               href="#console"
               style={{
-                ...disp, fontSize: 13, fontWeight: 700,
-                background: C.text, color: C.bg,
-                padding: "12px 22px", borderRadius: 8, textDecoration: "none",
+                ...disp, fontSize: 14, fontWeight: 700,
+                background: C.accent, color: "#FFFFFF",
+                padding: "13px 28px", borderRadius: 10, textDecoration: "none",
                 display: "inline-flex", alignItems: "center", gap: 8,
-                transition: "opacity .15s ease",
+                transition: "opacity .15s ease, transform .15s ease, box-shadow .15s ease",
+                boxShadow: `0 4px 14px ${C.accent}30, 0 1px 3px ${C.accent}20`,
               }}
-              onMouseEnter={e => e.currentTarget.style.opacity = "0.88"}
-              onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+              onMouseEnter={e => { e.currentTarget.style.opacity = "0.92"; e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `0 8px 24px ${C.accent}35`; }}
+              onMouseLeave={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = `0 4px 14px ${C.accent}30, 0 1px 3px ${C.accent}20`; }}
             >
-              Open console <ChevronRight size={15} />
+              Open console <ChevronRight size={16} strokeWidth={2.5} />
             </a>
             <button
               onClick={() => document.querySelector(".scroll-zone")?.scrollIntoView({ behavior: reducedMotion ? "instant" : "smooth" })}
               style={{
-                ...disp, fontSize: 13, fontWeight: 600,
-                background: "transparent", color: C.dim,
-                padding: "12px 22px", borderRadius: 8,
+                ...disp, fontSize: 14, fontWeight: 600,
+                background: C.bg, color: C.dim,
+                padding: "13px 24px", borderRadius: 10,
                 border: `1px solid ${C.border}`, cursor: "pointer",
-                transition: "border-color .15s ease, color .15s ease",
+                transition: "border-color .15s ease, color .15s ease, background .15s ease",
               }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = "#2C3D4C"; e.currentTarget.style.color = C.text; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = C.borderLit; e.currentTarget.style.color = C.text; e.currentTarget.style.background = C.bgAlt; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; e.currentTarget.style.background = C.bg; }}
             >
               See it work
             </button>
           </div>
+
+          {/* social proof bar */}
+          <div style={{
+            display: "flex", alignItems: "center", gap: 20, marginTop: 40,
+            paddingTop: 28, borderTop: `1px solid ${C.border}`,
+            flexWrap: "wrap",
+          }}>
+            {[
+              { icon: <Shield size={13} />, text: "ISRO / SAC evaluated" },
+              { icon: <Globe size={13} />,  text: "GeoTIFF · TIFF · JPEG" },
+              { icon: <Zap size={13} />,    text: "5 specialist models" },
+            ].map(({ icon, text }) => (
+              <div key={text} style={{
+                display: "flex", alignItems: "center", gap: 6,
+                ...disp, fontSize: 12.5, color: C.faint, fontWeight: 500,
+              }}>
+                <span style={{ color: C.accent }}>{icon}</span>
+                {text}
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* RIGHT — 3-D globe */}
-        <div style={{
-          position: "relative",
-          width: "100%",
-          aspectRatio: "1 / 1",
-          maxWidth: 580,
-          justifySelf: "end",
-          opacity: show ? 1 : 0,
-          transition: reducedMotion ? "none" : "opacity 1.1s ease .2s",
-        }}>
-          {/* subtle radial glow behind globe */}
+        {/* RIGHT — 3D globe in a "space" container */}
+        <div
+          className="hero-globe"
+          style={{
+            position: "relative",
+            width: "100%", aspectRatio: "1 / 1",
+            maxWidth: 560, justifySelf: "end",
+            opacity: show ? 1 : 0,
+            transition: reducedMotion ? "none" : "opacity 1.1s ease .2s",
+          }}
+        >
+          {/* space backdrop — gives the globe context on white page */}
           <div style={{
-            position: "absolute", inset: "-15%",
-            background: `radial-gradient(circle, ${C.sar}12 0%, transparent 70%)`,
-            pointerEvents: "none",
+            position: "absolute", inset: 0,
+            borderRadius: "50%",
+            background: "radial-gradient(ellipse at 35% 35%, #1a2744 0%, #0B0F18 60%, #060810 100%)",
+            boxShadow: "0 24px 80px rgba(15,23,42,0.2), 0 0 0 1px rgba(255,255,255,0.06)",
           }} />
-          <Suspense fallback={<StaticEarth />}>
-            <Hero scrollProgress={0} reducedMotion={reducedMotion} />
-          </Suspense>
+          {/* atmosphere glow ring */}
+          <div style={{
+            position: "absolute", inset: -2,
+            borderRadius: "50%",
+            background: "transparent",
+            boxShadow: `0 0 60px 8px rgba(56,189,248,0.08)`,
+          }} />
+          <Hero scrollProgress={0} reducedMotion={reducedMotion} />
         </div>
       </div>
 
@@ -517,70 +849,16 @@ function HeroSection({ reducedMotion }) {
         animation: reducedMotion ? "none" : "nudge 2.2s ease-in-out infinite",
         zIndex: 2,
       }}>
-        <span style={{ ...mono, fontSize: 10, color: C.faint, letterSpacing: 1 }}>SCROLL</span>
-        <ChevronDown size={14} color={C.faint} />
+        <span style={{ ...mono, fontSize: 10, color: C.faint, letterSpacing: 1.5 }}>SCROLL</span>
+        <ChevronDown size={13} color={C.faint} />
       </div>
 
-      {/* mobile override */}
       <style>{`
         @media (max-width: 860px) {
-          .hero-grid { grid-template-columns: 1fr !important; }
+          .hero-grid { grid-template-columns: 1fr !important; padding: 48px 24px !important; }
           .hero-globe { display: none !important; }
         }
       `}</style>
-    </div>
-  );
-}
-
-/* ── minimal star field ── */
-function StarField() {
-  const stars = useRef(
-    Array.from({ length: 120 }, (_, i) => ({
-      x: (Math.sin(i * 2.7) * 0.5 + 0.5) * 100,
-      y: (Math.cos(i * 1.9) * 0.5 + 0.5) * 100,
-      r: 0.6 + (i % 3) * 0.4,
-      o: 0.2 + (i % 5) * 0.12,
-    }))
-  );
-  return (
-    <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 0 }} aria-hidden="true">
-      {stars.current.map((s, i) => (
-        <circle key={i} cx={`${s.x}%`} cy={`${s.y}%`} r={s.r} fill="white" opacity={s.o} />
-      ))}
-    </svg>
-  );
-}
-
-/* ── console bridge headline ── */
-function ConsoleBridge() {
-  return (
-    <div style={{
-      background: C.bg,
-      padding: "80px 24px 0",
-      borderTop: `1px solid ${C.border}`,
-    }}>
-      <div style={{ maxWidth: 700, margin: "0 auto", textAlign: "center" }}>
-        <div style={{
-          display: "inline-flex", alignItems: "center", gap: 8,
-          ...mono, fontSize: 10, color: C.change,
-          letterSpacing: 2, textTransform: "uppercase",
-          marginBottom: 20,
-          background: `${C.change}10`,
-          border: `1px solid ${C.change}33`,
-          padding: "5px 14px", borderRadius: 20,
-        }}>
-          ↓ Product console
-        </div>
-        <h2 style={{ ...disp, fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 700, letterSpacing: -1.2, marginBottom: 16, lineHeight: 1.1 }}>
-          One interface.<br />
-          <span style={{ color: C.optical }}>Every input type.</span>
-        </h2>
-        <p style={{ fontSize: 15, color: C.dim, lineHeight: 1.75, maxWidth: 480, margin: "0 auto" }}>
-          Upload one or two images, type your question. The agent classifies the task,
-          picks a specialist, and returns a structured, evidence-grounded answer.
-        </p>
-      </div>
-      <div style={{ marginTop: 56, height: 1, background: `linear-gradient(90deg, transparent, ${C.border}, transparent)` }} />
     </div>
   );
 }
@@ -592,47 +870,30 @@ export default function LandingPage() {
   return (
     <div style={{ background: C.bg, color: C.text, ...disp }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #0B0F18; }
-        #root { width: 100% !important; max-width: 100% !important; border: none !important; min-height: 100vh; text-align: left; }
-        ::selection { background: #F472B644; }
-        .spin { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .step-pulse { animation: spulse 1s ease-in-out infinite; }
-        @keyframes spulse { 0%,100%{box-shadow:0 0 0 0 #F472B644}50%{box-shadow:0 0 0 5px #F472B600} }
+        @keyframes nudge { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(7px)} }
+        @keyframes spulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        .spin { animation: spin 1s linear infinite; }
+        .step-pulse { animation: spulse 2s ease-in-out infinite; }
         .fade-in { animation: fadein .4s ease forwards; }
         @keyframes fadein { from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)} }
-        @keyframes nudge { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(6px)} }
-        ::-webkit-scrollbar { width:6px; } ::-webkit-scrollbar-thumb { background:#243444; border-radius:3px; }
-        @media (prefers-reduced-motion:reduce) {
-          .spin,.step-pulse,.fade-in { animation:none !important; }
-          * { transition-duration:.01ms !important; }
-        }
-        html { scroll-behavior: smooth; }
-        @media (prefers-reduced-motion:reduce) { html { scroll-behavior: auto; } }
       `}</style>
 
       {/* sticky navbar */}
       <Navbar reducedMotion={reducedMotion} />
 
-      {/* 1. Hero — full-bleed globe + headline */}
+      {/* 1. Hero */}
       <HeroSection reducedMotion={reducedMotion} />
 
-      {/* 2. Scroll-driven zoom — globe → tile → SAR wipe → evidence */}
-      <div id="how-it-works" className="scroll-zone">
-        <ScrollZoom reducedMotion={reducedMotion} />
-      </div>
+      {/* 2. Interactive satellite telemetry demo */}
+      <HowItWorks reducedMotion={reducedMotion} />
 
-      {/* 3. Credibility strip — calm, static, data-backed */}
+      {/* 3. Credibility strip */}
       <div id="capabilities">
         <CredibilityStrip />
       </div>
 
-      {/* 4. Bridge copy into console */}
-      <ConsoleBridge />
-
-      {/* 5. Console — the actual product UI */}
+      {/* 4. Console */}
       <Console />
     </div>
   );

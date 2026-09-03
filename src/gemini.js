@@ -1,25 +1,22 @@
-﻿import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 /* internal model list — never shown in the UI */
-const VISION_MODELS = ["gemini-2.5-flash","gemini-2.5-pro","gemini-1.5-flash","gemini-1.5-pro"];
-const TEXT_MODELS   = ["gemini-2.5-flash","gemini-1.5-flash","gemini-1.5-pro","gemini-1.0-pro"];
+const VISION_MODELS = ["gemini-2.5-flash", "gemini-2.5-pro"];
+const TEXT_MODELS   = ["gemini-2.5-flash", "gemini-2.5-pro"];
+const RETRYABLE_ERRORS = [429, 500, 502, 503, 504];
 
-/* public aliases — shown to the user instead of real model names */
-const MODEL_ALIAS = {
-  "gemini-2.5-flash": "VLM-1",
-  "gemini-2.5-pro":   "VLM-2",
-  "gemini-1.5-flash": "VLM-3",
-  "gemini-1.5-pro":   "VLM-4",
-  "gemini-1.0-pro":   "VLM-5",
+const MODEL_ALIASES = {
+  "gemini-2.5-flash": "VLM-2.5-Flash",
+  "gemini-2.5-pro": "VLM-2.5-Pro",
 };
-const toAlias = (name) => MODEL_ALIAS[name] || "VLM";
+const toAlias = (name) => MODEL_ALIASES[name] || "VLM";
 
 function isRetryable(err) {
   const msg = err?.message || String(err);
-  if ([503,429,500,502,504].some(c => msg.includes(String(c)))) return true;
+  if (RETRYABLE_ERRORS.some(c => msg.includes(String(c)))) return true;
   if (/high demand|overload|quota|rate.?limit|unavailable|try again/i.test(msg)) return true;
   return false;
 }
