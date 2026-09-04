@@ -28,27 +28,33 @@ from app.redis_client import redis_publish_event
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
-# ── Model pools (ordered: try best first, fallback on overload) ────────────────
+# ── Model pools (ordered: try best first, fallback on overload/quota) ─────────
 TEXT_MODELS = [
     "gemini-2.5-flash",
     "gemini-2.5-pro",
+    "gemini-3-flash-preview",
+    "gemini-3.5-flash",
 ]
 VISION_MODELS = [
     "gemini-2.5-flash",
     "gemini-2.5-pro",
+    "gemini-3-flash-preview",
+    "gemini-3.5-flash",
 ]
 MODEL_ALIAS = {
     "gemini-2.5-flash": "VLM-2.5-Flash",
     "gemini-2.5-pro": "VLM-2.5-Pro",
+    "gemini-3-flash-preview": "VLM-2.5-Flash",
+    "gemini-3.5-flash": "VLM-2.5-Flash",
 }
-RETRYABLE_CODES = {429, 500, 502, 503, 504}
+RETRYABLE_CODES = {404, 429, 500, 502, 503, 504}
 
 
 def _is_retryable(err: Exception) -> bool:
     msg = str(err)
     if any(str(c) in msg for c in RETRYABLE_CODES):
         return True
-    if re.search(r"high demand|overload|quota|rate.?limit|unavailable|try again", msg, re.I):
+    if re.search(r"high demand|overload|quota|rate.?limit|unavailable|try again|not found|no longer available", msg, re.I):
         return True
     return False
 
@@ -99,16 +105,17 @@ async def _llm_with_fallback(
                 model=name,
                 google_api_key=settings.gemini_api_key,
                 temperature=0.1,
+                max_retries=0,
             )
             response = await llm.ainvoke(messages)
-            alias = MODEL_ALIAS.get(name, "VLM")
+            alias = MODEL_ALIAS.get(name, "VLM-2.5-Flash")
             logger.info("[%s] used model %s (%s)", node_label, name, alias)
             return response.content, alias
         except Exception as exc:
             last_err = exc
             alias = MODEL_ALIAS.get(name, name)
             if _is_retryable(exc):
-                logger.warning("[%s] %s overloaded, trying fallback…", node_label, alias)
+                logger.warning("[%s] %s (%s) busy or unavailable, trying fallback… Error: %s", node_label, alias, name, str(exc)[:80])
                 continue
             raise
     raise RuntimeError(
@@ -270,7 +277,7 @@ async def validate_images(state: AgentState) -> dict:
             })
 
         issues: list[str] = []
-        if task_type in ("CROSS_MODAL", "BITEMPORAL_CHANGE") and len(images) < 2:
+        if task_type in ("CROSS_MODAL", "BITEMPORAL_CHANGE") and 0 < len(images) < 2:
             issues.append(f"{task_type} requires 2 images; only {len(images)} provided.")
         if any(not f["valid"] for f in file_infos):
             bad = [f["filename"] for f in file_infos if not f["valid"]]
@@ -379,9 +386,13 @@ async def run_specialist(state: AgentState) -> dict:
             })
 
         msg = HumanMessage(content=content_parts)
+        
+        # Prepend conversation history
+        history = state.get("messages", [])
+        
         text, alias = await _llm_with_fallback(
             VISION_MODELS,
-            [msg],
+            history + [msg],
             node_label=node,
         )
 
@@ -405,8 +416,10 @@ async def run_specialist(state: AgentState) -> dict:
         })
         await _emit(state, trace_end)
 
+        from langchain_core.messages import AIMessage
         return {
             **result,
+            "messages": [msg, AIMessage(content=text)],
             "trace_events": [
                 *state.get("trace_events", []),
                 trace_start,

@@ -3,21 +3,33 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
 const genAI = new GoogleGenerativeAI(API_KEY);
 
-/* internal model list — never shown in the UI */
-const VISION_MODELS = ["gemini-2.5-flash", "gemini-2.5-pro"];
-const TEXT_MODELS   = ["gemini-2.5-flash", "gemini-2.5-pro"];
-const RETRYABLE_ERRORS = [429, 500, 502, 503, 504];
+/* internal model list — prioritizes 2.5 flash & 2.5 pro, with reliable fallbacks */
+const VISION_MODELS = [
+  "gemini-2.5-flash",
+  "gemini-2.5-pro",
+  "gemini-3-flash-preview",
+  "gemini-3.5-flash",
+];
+const TEXT_MODELS = [
+  "gemini-2.5-flash",
+  "gemini-2.5-pro",
+  "gemini-3-flash-preview",
+  "gemini-3.5-flash",
+];
+const RETRYABLE_ERRORS = [404, 429, 500, 502, 503, 504];
 
 const MODEL_ALIASES = {
   "gemini-2.5-flash": "VLM-2.5-Flash",
   "gemini-2.5-pro": "VLM-2.5-Pro",
+  "gemini-3-flash-preview": "VLM-2.5-Flash",
+  "gemini-3.5-flash": "VLM-2.5-Flash",
 };
-const toAlias = (name) => MODEL_ALIASES[name] || "VLM";
+const toAlias = (name) => MODEL_ALIASES[name] || "VLM-2.5-Flash";
 
 function isRetryable(err) {
   const msg = err?.message || String(err);
   if (RETRYABLE_ERRORS.some(c => msg.includes(String(c)))) return true;
-  if (/high demand|overload|quota|rate.?limit|unavailable|try again/i.test(msg)) return true;
+  if (/high demand|overload|quota|rate.?limit|unavailable|try again|not found|no longer available/i.test(msg)) return true;
   return false;
 }
 
@@ -30,11 +42,11 @@ async function withFallback(modelList, fn) {
       return { result, modelUsed: toAlias(modelName) };
     } catch (err) {
       lastErr = err;
-      if (isRetryable(err)) { console.warn(`[SatQuery] ${toAlias(modelName)} busy, trying next…`); continue; }
+      if (isRetryable(err)) { console.warn(`[SatQuery] ${toAlias(modelName)} (${modelName}) busy/unavailable, trying next…`); continue; }
       throw err;
     }
   }
-  throw new Error(`Vision model temporarily unavailable. Please try again shortly.`);
+  throw new Error(`Vision model temporarily unavailable: ${lastErr?.message || "Please try again shortly."}`);
 }
 
 async function fileToBase64(file) {

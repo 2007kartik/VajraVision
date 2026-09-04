@@ -46,6 +46,9 @@ async def create_run(
     image_count: int,
 ) -> AnalysisRun:
     """Insert a new run row with status='running'."""
+    # Ensure the session exists to avoid foreign key violation
+    await get_or_create_session(session_id)
+    
     async with db_session() as db:
         run = AnalysisRun(
             id=uuid.UUID(run_id),

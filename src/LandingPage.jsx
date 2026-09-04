@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, lazy, Suspense } from "react";
-import { ChevronRight, ChevronDown, Satellite, Menu, X as XIcon, Zap, Shield, Globe, Cpu } from "lucide-react";
+import { ChevronRight, ChevronDown, Satellite, Menu, X as XIcon, Zap, Shield, Globe, Cpu, Moon, Sun } from "lucide-react";
 import CredibilityStrip from "./components/CredibilityStrip.jsx";
 import Console from "./Console.jsx";
 import satOptical from "./assets/optical.jpg";
@@ -8,27 +8,26 @@ import satBitemporal from "./assets/bi-temporal.jpg";
 
 import Hero from "./components/Hero.jsx";
 
-/* ── design tokens — light mode ── */
 const C = {
-  bg:        "#FFFFFF",
-  bgAlt:     "#F8FAFC",
-  surface:   "#F1F5F9",
-  panel:     "#FFFFFF",
-  border:    "#E2E8F0",
-  borderLit: "#CBD5E1",
-  text:      "#0F172A",
-  dim:       "#475569",
-  faint:     "#94A3B8",
-  accent:    "#2563EB",   // primary blue
-  accentLt:  "#DBEAFE",   // blue tint
-  optical:   "#B45309",   // amber-700 (readable on white)
-  opticalLt: "#FEF3C7",
-  sar:       "#0369A1",   // sky-700
-  sarLt:     "#E0F2FE",
-  change:    "#6D28D9",   // violet-700
-  changeLt:  "#EDE9FE",
-  good:      "#047857",   // emerald-700
-  goodLt:    "#D1FAE5",
+  bg:        "var(--bg)",
+  bgAlt:     "var(--bgAlt)",
+  surface:   "var(--surface)",
+  panel:     "var(--panel)",
+  border:    "var(--border)",
+  borderLit: "var(--borderLit)",
+  text:      "var(--text)",
+  dim:       "var(--dim)",
+  faint:     "var(--faint)",
+  accent:    "var(--accent)",
+  accentLt:  "var(--accentLt)",
+  optical:   "var(--optical)",
+  opticalLt: "var(--opticalLt)",
+  sar:       "var(--sar)",
+  sarLt:     "var(--sarLt)",
+  change:    "var(--change)",
+  changeLt:  "var(--changeLt)",
+  good:      "var(--good)",
+  goodLt:    "var(--goodLt)",
 };
 
 const mono  = { fontFamily: "'JetBrains Mono', 'Fira Code', monospace" };
@@ -52,6 +51,14 @@ function usePrefersReducedMotion() {
 function Navbar({ reducedMotion }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(t => (t === "light" ? "dark" : "light"));
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -78,7 +85,7 @@ function Navbar({ reducedMotion }) {
         style={{
           position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
           borderBottom: `1px solid ${scrolled ? C.border : "transparent"}`,
-          background: scrolled ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0)",
+          background: scrolled ? "var(--panel)" : "transparent",
           backdropFilter: scrolled ? "blur(12px)" : "none",
           transition: reducedMotion ? "none" : "background .3s ease, border-color .3s ease",
         }}
@@ -142,6 +149,13 @@ function Navbar({ reducedMotion }) {
             >
               Open console <ChevronRight size={13} strokeWidth={2.5} />
             </a>
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle theme"
+              style={{ background: "none", border: `1px solid ${C.border}`, cursor: "pointer", color: C.dim, display: "flex", padding: 7, borderRadius: 7 }}
+            >
+              {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+            </button>
             <button
               className="nav-mobile-btn"
               aria-label={mobileOpen ? "Close menu" : "Open menu"}
@@ -258,12 +272,12 @@ function HowItWorks({ reducedMotion }) {
       id="how-it-works"
       style={{
         position: "relative",
-        background: "#080C14",
-        color: "#F8FAFC",
+        background: "var(--bgAlt)",
+        color: "var(--text)",
         padding: "96px 24px",
         overflow: "hidden",
-        borderTop: "1px solid #1E293B",
-        borderBottom: "1px solid #1E293B",
+        borderTop: `1px solid var(--border)`,
+        borderBottom: `1px solid var(--border)`,
       }}
     >
       {/* subtle space glow background */}
@@ -311,14 +325,14 @@ function HowItWorks({ reducedMotion }) {
               letterSpacing: -1.2,
               lineHeight: 1.15,
               margin: "0 0 16px",
-              color: "#FFFFFF",
+              color: "var(--text)",
             }}
           >
             How SatQuery AI Reads Orbit-to-Pixel Data
           </h2>
 
-          <p style={{ fontSize: 16, color: "#94A3B8", lineHeight: 1.7, margin: 0 }}>
-            Inspect real Earth Observation payloads from <span style={{ color: "#F8FAFC", fontWeight: 600 }}>src/assets</span>.
+          <p style={{ fontSize: 16, color: "var(--dim)", lineHeight: 1.7, margin: 0 }}>
+            Inspect real Earth Observation payloads from <span style={{ color: "var(--text)", fontWeight: 600 }}>src/assets</span>.
             Switch between sensor modalities to examine how our specialized VLM pipeline decodes optical detail,
             radar backscatter, and temporal land cover changes.
           </p>
@@ -347,9 +361,9 @@ function HowItWorks({ reducedMotion }) {
                   cursor: "pointer",
                   padding: "12px 22px",
                   borderRadius: 10,
-                  border: `1px solid ${isSelected ? m.badgeColor : "#1E293B"}`,
-                  background: isSelected ? m.badgeBg : "#0F172A",
-                  color: isSelected ? "#FFFFFF" : "#94A3B8",
+                  border: `1px solid ${isSelected ? m.badgeColor : "var(--border)"}`,
+                  background: isSelected ? m.badgeBg : "var(--surface)",
+                  color: isSelected ? "var(--text)" : "var(--dim)",
                   display: "flex",
                   alignItems: "center",
                   gap: 10,
@@ -378,11 +392,11 @@ function HowItWorks({ reducedMotion }) {
             display: "grid",
             gridTemplateColumns: "1.2fr 0.8fr",
             gap: 32,
-            background: "#0B111E",
-            border: "1px solid #1E293B",
+            background: "var(--bg)",
+            border: `1px solid var(--border)`,
             borderRadius: 16,
             padding: 24,
-            boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
+            boxShadow: "0 20px 50px rgba(0,0,0,0.1)",
           }}
           className="telemetry-grid"
         >
@@ -395,26 +409,26 @@ function HowItWorks({ reducedMotion }) {
                 alignItems: "center",
                 justifyContent: "space-between",
                 padding: "8px 14px",
-                background: "#070A10",
+                background: "var(--panel)",
                 borderRadius: 8,
-                border: "1px solid #1E293B",
+                border: `1px solid var(--border)`,
                 ...mono,
                 fontSize: 11,
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <span style={{ color: current.badgeColor, fontWeight: 700 }}>● LIVE FEED</span>
-                <span style={{ color: "#64748B" }}>|</span>
-                <span style={{ color: "#CBD5E1" }}>{current.sensor}</span>
+                <span style={{ color: "var(--dim)" }}>|</span>
+                <span style={{ color: "var(--text)" }}>{current.sensor}</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                <span style={{ color: "#94A3B8" }}>{current.coords}</span>
+                <span style={{ color: "var(--dim)" }}>{current.coords}</span>
                 <button
                   onClick={() => setShowOverlay(!showOverlay)}
                   style={{
-                    background: showOverlay ? "rgba(37,99,235,0.2)" : "rgba(255,255,255,0.05)",
-                    border: `1px solid ${showOverlay ? "#3B82F6" : "#334155"}`,
-                    color: showOverlay ? "#60A5FA" : "#94A3B8",
+                    background: showOverlay ? "var(--accentLt)" : "transparent",
+                    border: `1px solid ${showOverlay ? "var(--accent)" : "var(--border)"}`,
+                    color: showOverlay ? "var(--accent)" : "var(--dim)",
                     padding: "3px 9px",
                     borderRadius: 5,
                     cursor: "pointer",
@@ -534,15 +548,15 @@ function HowItWorks({ reducedMotion }) {
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
-              background: "#070A12",
-              border: "1px solid #1E293B",
+              background: "var(--panel)",
+              border: `1px solid var(--border)`,
               borderRadius: 12,
               padding: 24,
             }}
           >
             <div>
               {/* Specialist Routing Header */}
-              <div style={{ ...mono, fontSize: 11, color: "#64748B", marginBottom: 6 }}>
+              <div style={{ ...mono, fontSize: 11, color: "var(--faint)", marginBottom: 6 }}>
                 ROUTED SPECIALIST MODEL
               </div>
               <div
@@ -550,7 +564,7 @@ function HowItWorks({ reducedMotion }) {
                   ...disp,
                   fontSize: 19,
                   fontWeight: 700,
-                  color: "#FFFFFF",
+                  color: "var(--text)",
                   marginBottom: 16,
                   display: "flex",
                   alignItems: "center",
@@ -562,12 +576,12 @@ function HowItWorks({ reducedMotion }) {
               </div>
 
               {/* Specialist Confidence Meter */}
-              <div style={{ marginBottom: 24, background: "#0B111E", padding: "12px 16px", borderRadius: 8, border: "1px solid #1E293B" }}>
+              <div style={{ marginBottom: 24, background: "var(--bgAlt)", padding: "12px 16px", borderRadius: 8, border: `1px solid var(--border)` }}>
                 <div style={{ display: "flex", justifyContent: "space-between", ...mono, fontSize: 11, marginBottom: 8 }}>
-                  <span style={{ color: "#94A3B8" }}>Classification Confidence</span>
-                  <span style={{ color: "#10B981", fontWeight: 700 }}>{current.confidence}</span>
+                  <span style={{ color: "var(--dim)" }}>Classification Confidence</span>
+                  <span style={{ color: "var(--good)", fontWeight: 700 }}>{current.confidence}</span>
                 </div>
-                <div style={{ height: 6, width: "100%", background: "#1E293B", borderRadius: 3, overflow: "hidden" }}>
+                <div style={{ height: 6, width: "100%", background: "var(--border)", borderRadius: 3, overflow: "hidden" }}>
                   <div
                     style={{
                       height: "100%",
@@ -580,17 +594,17 @@ function HowItWorks({ reducedMotion }) {
               </div>
 
               {/* VLM Synthesis Evidence */}
-              <div style={{ ...mono, fontSize: 11, color: "#64748B", marginBottom: 8 }}>
+              <div style={{ ...mono, fontSize: 11, color: "var(--faint)", marginBottom: 8 }}>
                 AI SYNTHESIS & REASONING TRACE
               </div>
               <div
                 style={{
                   padding: "14px 16px",
-                  background: "rgba(30,41,59,0.4)",
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  background: "var(--surface)",
+                  border: `1px solid var(--border)`,
                   borderRadius: 8,
                   fontSize: 13.5,
-                  color: "#E2E8F0",
+                  color: "var(--text)",
                   lineHeight: 1.6,
                   marginBottom: 24,
                 }}
@@ -599,27 +613,27 @@ function HowItWorks({ reducedMotion }) {
               </div>
 
               {/* Sensor Technical Specifications */}
-              <div style={{ ...mono, fontSize: 11, color: "#64748B", marginBottom: 10 }}>
+              <div style={{ ...mono, fontSize: 11, color: "var(--faint)", marginBottom: 10 }}>
                 SENSOR TELEMETRY SPECS
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8, ...mono, fontSize: 11 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #1E293B", paddingBottom: 6 }}>
-                  <span style={{ color: "#94A3B8" }}>Platform:</span>
-                  <span style={{ color: "#F1F5F9" }}>{current.sensor}</span>
+                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: `1px solid var(--border)`, paddingBottom: 6 }}>
+                  <span style={{ color: "var(--dim)" }}>Platform:</span>
+                  <span style={{ color: "var(--text)" }}>{current.sensor}</span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #1E293B", paddingBottom: 6 }}>
-                  <span style={{ color: "#94A3B8" }}>Target Area:</span>
-                  <span style={{ color: "#F1F5F9" }}>{current.target}</span>
+                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: `1px solid var(--border)`, paddingBottom: 6 }}>
+                  <span style={{ color: "var(--dim)" }}>Target Area:</span>
+                  <span style={{ color: "var(--text)" }}>{current.target}</span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #1E293B", paddingBottom: 6 }}>
-                  <span style={{ color: "#94A3B8" }}>Spectral Config:</span>
-                  <span style={{ color: "#F1F5F9" }}>{current.bands.split(",")[0]}</span>
+                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: `1px solid var(--border)`, paddingBottom: 6 }}>
+                  <span style={{ color: "var(--dim)" }}>Spectral Config:</span>
+                  <span style={{ color: "var(--text)" }}>{current.bands.split(",")[0]}</span>
                 </div>
               </div>
             </div>
 
             {/* CTA to jump to Console */}
-            <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid #1E293B" }}>
+            <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid var(--border)` }}>
               <a
                 href="#console"
                 style={{

@@ -34,12 +34,14 @@ ALLOWED_MIME_TYPES = {
 MAX_IMAGE_SIZE_MB = 20
 
 
+from typing import Optional
+
 @router.post("/analyze", response_model=AnalyzeResponse, status_code=202)
 async def analyze(
     background_tasks: BackgroundTasks,
     session_id: str = Form(...),
-    query: str = Form(..., min_length=3, max_length=2000),
-    images: list[UploadFile] = File(...),
+    query: str = Form(..., min_length=1, max_length=2000),
+    images: Optional[list[UploadFile]] = File(None),
 ):
     """
     Submit a satellite image analysis request.
@@ -57,9 +59,12 @@ async def analyze(
     if not allowed:
         raise HTTPException(429, "Rate limit exceeded. Try again in a minute.")
 
+    if images is None:
+        images = []
+
     # ── Validate images ────────────────────────────────────────────────────────
-    if not images or len(images) > 2:
-        raise HTTPException(400, "Send 1 or 2 images.")
+    if len(images) > 2:
+        raise HTTPException(400, "Send at most 2 images.")
     for img in images:
         if img.content_type not in ALLOWED_MIME_TYPES:
             raise HTTPException(

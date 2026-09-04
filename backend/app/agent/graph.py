@@ -37,7 +37,7 @@ from app.agent.nodes import (
 )
 from app.agent.state import AgentState
 from app.redis_client import get_redis
-from langgraph.checkpoint.redis import AsyncRedisSaver
+
 
 logger = logging.getLogger(__name__)
 
@@ -125,20 +125,24 @@ def build_graph(checkpointer=None) -> StateGraph:
     return graph.compile(checkpointer=checkpointer)
 
 
-@lru_cache(maxsize=1)
+_compiled_graph = None
+
 async def get_compiled_graph():
     """
-    Return the compiled LangGraph agent configured with a Redis checkpointer.
+    Return the compiled LangGraph agent configured with a checkpointer.
     LangSmith env vars are configured once here at startup.
     """
-    logger.info("Compiling LangGraph SatQuery agent DAG…")
-    
-    # We must rebuild the graph instance if we want to attach a dynamic checkpointer,
-    # or just attach it once using a global pool.
-    pool = await get_redis()
-    checkpointer = AsyncRedisSaver(pool)
-    
-    _configure_langsmith()
-    compiled = build_graph(checkpointer=checkpointer)
-    logger.info("LangGraph agent compiled with Redis memory checkpointer.")
-    return compiled
+    global _compiled_graph
+    if _compiled_graph is None:
+        logger.info("Compiling LangGraph SatQuery agent DAG…")
+        
+        # Temporarily using MemorySaver to avoid RedisJSON JSONPath syntax errors with langgraph-checkpoint-redis
+        from langgraph.checkpoint.memory import MemorySaver
+        checkpointer = MemorySaver()
+        
+        _configure_langsmith()
+        _compiled_graph = build_graph(checkpointer=checkpointer)
+        logger.info("LangGraph agent compiled with Memory checkpointer.")
+        
+    return _compiled_graph
+
