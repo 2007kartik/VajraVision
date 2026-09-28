@@ -51,7 +51,7 @@ async def lifespan(app: FastAPI):
 
     # ── Pre-compile LangGraph agent (eager, so first request is fast)
     from app.agent.graph import get_compiled_graph
-    get_compiled_graph()
+    await get_compiled_graph()
 
     yield   # app runs here
 

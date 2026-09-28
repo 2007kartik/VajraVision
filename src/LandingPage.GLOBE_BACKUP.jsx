@@ -5,10 +5,8 @@ import Console from "./Console.jsx";
 import satOptical from "./assets/optical.jpg";
 import satSar from "./assets/sar.jpg";
 import satBitemporal from "./assets/bi-temporal.jpg";
-import heroBgVideo from "./assets/webpage_bg.mp4";
 
 import Hero from "./components/Hero.jsx";
-
 
 const C = {
   bg:        "var(--bg)",
@@ -334,7 +332,7 @@ function HowItWorks({ reducedMotion }) {
           </h2>
 
           <p style={{ fontSize: 16, color: "var(--dim)", lineHeight: 1.7, margin: 0 }}>
-            Inspect real Earth Observation payloads from <span style={{ color: "#38bdf8", fontWeight: 600 }}>ISRO Cartosat-2S & RISAT-1</span>.
+            Inspect real Earth Observation payloads from <span style={{ color: "var(--text)", fontWeight: 600 }}>src/assets</span>.
             Switch between sensor modalities to examine how our specialized VLM pipeline decodes optical detail,
             radar backscatter, and temporal land cover changes.
           </p>
@@ -674,7 +672,7 @@ function HowItWorks({ reducedMotion }) {
   );
 }
 
-/* ── hero section — VIDEO BACKGROUND version ── */
+/* ── hero section ── */
 function HeroSection({ reducedMotion }) {
   const [show, setShow] = useState(false);
   useEffect(() => {
@@ -682,82 +680,52 @@ function HeroSection({ reducedMotion }) {
     return () => clearTimeout(id);
   }, []);
 
+  const SPACE_BG = "transparent"; // stars come from Starfield canvas
+
   return (
     <div style={{
       position: "relative", minHeight: "100vh",
+      background: SPACE_BG,
       display: "flex", alignItems: "center",
       overflow: "hidden", paddingTop: 64,
     }}>
 
-      {/* ── Full-section video background (zoomed out & vibrant) ── */}
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        style={{
-          position: "absolute", inset: 0, zIndex: 0,
-          width: "100%", height: "100%",
-          objectFit: "cover",
-          objectPosition: "center center",
-          transform: "scale(0.82)",
-          transformOrigin: "70% center",
-          filter: "contrast(1.18) saturate(1.4) brightness(1.12)",
-          transition: "transform 0.4s ease",
-        }}
-      >
-        <source src={heroBgVideo} type="video/mp4" />
-      </video>
-
-      {/* ── Text readability backdrop (only on the left side, Earth on right remains 100% clear) ── */}
+      {/* Deep space radial gradient centered on globe side */}
       <div style={{
-        position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none",
+        position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none",
         background: `
-          linear-gradient(90deg,
-            rgba(3,5,15,0.92) 0%,
-            rgba(3,5,15,0.72) 36%,
-            rgba(3,5,15,0.15) 58%,
-            transparent 75%
-          )
+          radial-gradient(ellipse 65% 70% at 70% 48%, rgba(10,30,80,0.55) 0%, transparent 70%),
+          radial-gradient(ellipse 45% 45% at 18% 70%, rgba(30,10,70,0.3) 0%, transparent 60%)
         `,
       }} />
 
-      {/* ── Soft outer perimeter vignette only ── */}
-      <div style={{
-        position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none",
-        background: `
-          radial-gradient(ellipse 95% 85% at 50% 50%,
-            transparent 70%,
-            rgba(3,5,15,0.35) 100%
-          )
-        `,
-      }} />
-
-      {/* ── Subtle telemetry dot-grid ── */}
+      {/* Subtle grid of dots (space telemetry feel) */}
       <svg
-        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 1, opacity: 0.04 }}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 0, opacity: 0.12 }}
         aria-hidden="true"
       >
         <defs>
-          <pattern id="video-dot-grid" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
+          <pattern id="space-dot-grid" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
             <circle cx="1" cy="1" r="1" fill="#60a5fa" />
           </pattern>
         </defs>
-        <rect width="100%" height="100%" fill="url(#video-dot-grid)" />
+        <rect width="100%" height="100%" fill="url(#space-dot-grid)" />
       </svg>
 
-      {/* ── Content ── */}
+      {/* content row */}
       <div style={{
         position: "relative", zIndex: 2,
         maxWidth: 1320, margin: "0 auto", width: "100%",
         padding: "64px 24px",
-        minHeight: "calc(100vh - 64px)",
-        display: "flex",
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: 64,
         alignItems: "center",
-      }}>
-        {/* Text column — left aligned, max-width for readability */}
+        minHeight: "calc(100vh - 64px)",
+      }} className="hero-grid">
+
+        {/* LEFT — headline */}
         <div style={{
-          maxWidth: 620,
           opacity: show ? 1 : 0,
           transform: show ? "translateY(0)" : "translateY(28px)",
           transition: reducedMotion ? "none" : "opacity .9s ease, transform .9s ease",
@@ -771,7 +739,6 @@ function HeroSection({ reducedMotion }) {
             background: "rgba(56,189,248,0.1)",
             border: "1px solid rgba(56,189,248,0.3)",
             padding: "5px 14px", borderRadius: 20,
-            backdropFilter: "blur(6px)",
           }}>
             <span style={{
               width: 6, height: 6, borderRadius: "50%",
@@ -784,25 +751,20 @@ function HeroSection({ reducedMotion }) {
           </div>
 
           <h1 style={{
-            ...disp, fontSize: "clamp(36px, 4.8vw, 72px)", fontWeight: 800,
+            ...disp, fontSize: "clamp(36px, 4.8vw, 68px)", fontWeight: 800,
             lineHeight: 1.06, letterSpacing: -2.5, margin: "0 0 24px",
             color: "#f8fafc",
-            textShadow: "0 2px 40px rgba(0,0,0,0.6)",
           }}>
             Ask your<br />
             satellite imagery<br />
             <span style={{
               background: "linear-gradient(135deg, #38bdf8, #818cf8, #a78bfa)",
               WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-              filter: "drop-shadow(0 0 24px rgba(99,102,241,0.5))",
+              filter: "drop-shadow(0 0 20px rgba(99,102,241,0.4))",
             }}>anything.</span>
           </h1>
 
-          <p style={{
-            fontSize: 17, color: "#94a3b8", lineHeight: 1.75,
-            maxWidth: 480, marginBottom: 36,
-            textShadow: "0 1px 12px rgba(0,0,0,0.5)",
-          }}>
+          <p style={{ fontSize: 17, color: "#94a3b8", lineHeight: 1.75, maxWidth: 480, marginBottom: 36 }}>
             One query. Any image type. SatQuery AI reads your satellite imagery —
             optical, SAR, or bi-temporal pairs — classifies your intent, and routes
             to the right specialist model automatically.
@@ -811,15 +773,14 @@ function HeroSection({ reducedMotion }) {
           {/* input type pills */}
           <div style={{ display: "flex", gap: 8, marginBottom: 40, flexWrap: "wrap" }}>
             {[
-              { label: "Single image",       bg: "rgba(245,158,11,0.14)",  color: "#f59e0b",  border: "rgba(245,158,11,0.4)" },
-              { label: "Optical + SAR pair", bg: "rgba(56,189,248,0.12)",  color: "#38bdf8",  border: "rgba(56,189,248,0.35)" },
-              { label: "Bi-temporal pair",   bg: "rgba(167,139,250,0.12)", color: "#a78bfa",  border: "rgba(167,139,250,0.35)" },
+              { label: "Single image",       bg: "rgba(245,158,11,0.12)",  color: "#f59e0b",  border: "rgba(245,158,11,0.35)" },
+              { label: "Optical + SAR pair", bg: "rgba(56,189,248,0.1)",   color: "#38bdf8",  border: "rgba(56,189,248,0.3)" },
+              { label: "Bi-temporal pair",   bg: "rgba(167,139,250,0.1)",  color: "#a78bfa",  border: "rgba(167,139,250,0.3)" },
             ].map(({ label, bg, color, border }) => (
               <span key={label} style={{
                 ...mono, fontSize: 11.5, color, fontWeight: 500,
                 border: `1px solid ${border}`, background: bg,
                 padding: "5px 13px", borderRadius: 20, letterSpacing: 0.1,
-                backdropFilter: "blur(6px)",
               }}>{label}</span>
             ))}
           </div>
@@ -833,11 +794,11 @@ function HeroSection({ reducedMotion }) {
                 color: "#FFFFFF",
                 padding: "13px 28px", borderRadius: 10, textDecoration: "none",
                 display: "inline-flex", alignItems: "center", gap: 8,
-                transition: "transform .15s ease, box-shadow .15s ease",
-                boxShadow: "0 4px 20px rgba(59,130,246,0.45), 0 0 40px rgba(99,102,241,0.2)",
+                transition: "opacity .15s ease, transform .15s ease, box-shadow .15s ease",
+                boxShadow: "0 4px 20px rgba(59,130,246,0.4), 0 0 40px rgba(99,102,241,0.15)",
               }}
-              onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px) scale(1.02)"; e.currentTarget.style.boxShadow = "0 8px 30px rgba(59,130,246,0.55)"; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0) scale(1)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(59,130,246,0.45)"; }}
+              onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px) scale(1.02)"; e.currentTarget.style.boxShadow = "0 8px 30px rgba(59,130,246,0.5)"; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0) scale(1)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(59,130,246,0.4)"; }}
             >
               Open console <ChevronRight size={16} strokeWidth={2.5} />
             </a>
@@ -845,15 +806,15 @@ function HeroSection({ reducedMotion }) {
               onClick={() => document.querySelector("#how-it-works")?.scrollIntoView({ behavior: reducedMotion ? "instant" : "smooth" })}
               style={{
                 ...disp, fontSize: 14, fontWeight: 600,
-                background: "rgba(255,255,255,0.07)",
+                background: "rgba(255,255,255,0.05)",
                 color: "#94a3b8",
                 padding: "13px 24px", borderRadius: 10,
-                border: "1px solid rgba(255,255,255,0.15)", cursor: "pointer",
-                backdropFilter: "blur(10px)",
+                border: "1px solid rgba(255,255,255,0.12)", cursor: "pointer",
+                backdropFilter: "blur(8px)",
                 transition: "border-color .2s ease, color .2s ease, background .2s ease",
               }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(56,189,248,0.45)"; e.currentTarget.style.color = "#e2e8f0"; e.currentTarget.style.background = "rgba(56,189,248,0.1)"; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; e.currentTarget.style.color = "#94a3b8"; e.currentTarget.style.background = "rgba(255,255,255,0.07)"; }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(56,189,248,0.4)"; e.currentTarget.style.color = "#e2e8f0"; e.currentTarget.style.background = "rgba(56,189,248,0.08)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "#94a3b8"; e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
             >
               See it work
             </button>
@@ -880,6 +841,48 @@ function HeroSection({ reducedMotion }) {
             ))}
           </div>
         </div>
+
+        {/* RIGHT — 3D globe in a deep space container */}
+        <div
+          className="hero-globe"
+          style={{
+            position: "relative",
+            width: "100%", aspectRatio: "1 / 1",
+            maxWidth: 580, justifySelf: "end",
+            opacity: show ? 1 : 0,
+            transform: show ? "scale(1)" : "scale(0.93)",
+            transition: reducedMotion ? "none" : "opacity 1.1s ease .2s, transform 1.1s ease .2s",
+            animation: reducedMotion ? "none" : "float 7s ease-in-out infinite",
+          }}
+        >
+          {/* space backdrop */}
+          <div style={{
+            position: "absolute", inset: 0,
+            borderRadius: "50%",
+            background: "radial-gradient(ellipse at 38% 38%, #112044 0%, #0a0f1e 55%, #04060d 100%)",
+            boxShadow: [
+              "0 0 0 1px rgba(56,189,248,0.08)",
+              "0 0 60px 12px rgba(56,189,248,0.07)",
+              "0 32px 100px rgba(0,0,0,0.6)",
+            ].join(", "),
+          }} />
+          {/* slow orbit ring decoration */}
+          <div style={{
+            position: "absolute",
+            inset: "-14%",
+            borderRadius: "50%",
+            border: "1px solid rgba(56,189,248,0.08)",
+            animation: "orbRing 32s linear infinite",
+          }} />
+          <div style={{
+            position: "absolute",
+            inset: "-22%",
+            borderRadius: "50%",
+            border: "1px dashed rgba(167,139,250,0.06)",
+            animation: "orbRing 52s linear infinite reverse",
+          }} />
+          <Hero scrollProgress={0} reducedMotion={reducedMotion} />
+        </div>
       </div>
 
       {/* scroll hint */}
@@ -889,9 +892,16 @@ function HeroSection({ reducedMotion }) {
         animation: reducedMotion ? "none" : "nudge 2.2s ease-in-out infinite",
         zIndex: 2,
       }}>
-        <span style={{ ...mono, fontSize: 10, color: "rgba(255,255,255,0.3)", letterSpacing: 1.5 }}>SCROLL</span>
-        <ChevronDown size={13} color="rgba(255,255,255,0.3)" />
+        <span style={{ ...mono, fontSize: 10, color: "#334155", letterSpacing: 1.5 }}>SCROLL</span>
+        <ChevronDown size={13} color="#334155" />
       </div>
+
+      <style>{`
+        @media (max-width: 860px) {
+          .hero-grid { grid-template-columns: 1fr !important; padding: 48px 24px !important; }
+          .hero-globe { display: none !important; }
+        }
+      `}</style>
     </div>
   );
 }

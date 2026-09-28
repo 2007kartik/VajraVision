@@ -5,13 +5,12 @@ import earthCloudsUrl from "../assets/earth-clouds.png";
 import earthSpecUrl from "../assets/earth-specular.jpg";
 
 /**
- * Photorealistic 3D Earth Component using Vanilla Three.js
- * - Real NASA Blue Marble photographic surface
- * - Specular reflections on oceans & water bodies
- * - Floating cloud layer with independent rotational velocity
- * - Atmospheric Rayleigh scattering Fresnel rim glow
- * - ISRO / Earth Observation Satellites with orbital trails
- * - Interactive inertia-damped mouse/touch drag + auto-rotation
+ * Photorealistic 3D Earth with:
+ * - Continuous auto-rotation (never stops, drag adds on top)
+ * - Inertia-damped drag
+ * - Full 3D Rocket orbiting the globe (body + nose + fins + window + exhaust plume)
+ * - Orbital trail behind rocket
+ * - Atmospheric Fresnel glow
  */
 export default function Hero({ scrollProgress = 0, reducedMotion = false }) {
   const containerRef = useRef(null);
@@ -28,16 +27,16 @@ export default function Hero({ scrollProgress = 0, reducedMotion = false }) {
     let renderer = null;
 
     try {
-      // 1. Scene setup
+      // ── Scene ──────────────────────────────────────────────────────────────
       const scene = new THREE.Scene();
 
-      // 2. Camera setup
-      const width = container.clientWidth || 480;
+      // ── Camera ─────────────────────────────────────────────────────────────
+      const width  = container.clientWidth  || 480;
       const height = container.clientHeight || 480;
       const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 1000);
       camera.position.set(0, 0, 4.8);
 
-      // 3. Renderer setup
+      // ── Renderer ───────────────────────────────────────────────────────────
       renderer = new THREE.WebGLRenderer({
         canvas,
         alpha: true,
@@ -47,41 +46,36 @@ export default function Hero({ scrollProgress = 0, reducedMotion = false }) {
       renderer.setSize(width, height);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.15;
+      renderer.toneMappingExposure = 1.2;
 
-      // 4. Lighting
-      // Sunlight (directional light from upper-right)
-      const sunLight = new THREE.DirectionalLight(0xfff8ee, 2.4);
+      // ── Lighting ───────────────────────────────────────────────────────────
+      const sunLight = new THREE.DirectionalLight(0xfff8ee, 2.6);
       sunLight.position.set(6, 3.5, 4.5);
       scene.add(sunLight);
 
-      // Deep space ambient fill
-      const ambientLight = new THREE.AmbientLight(0x1a2e4a, 0.7);
+      const ambientLight = new THREE.AmbientLight(0x1a2e4a, 0.8);
       scene.add(ambientLight);
 
-      // Atmospheric back-rim light (cool cyan)
-      const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.6);
+      const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.7);
       rimLight.position.set(-6, -2, -4);
       scene.add(rimLight);
 
-      // 5. Earth Parent Pivot (tilted 23.4° for axial realism)
+      // ── Earth Pivot (axial tilt 23.4°) ─────────────────────────────────────
       const earthPivot = new THREE.Group();
       earthPivot.rotation.z = (23.4 * Math.PI) / 180;
       earthPivot.rotation.x = 0.1;
       scene.add(earthPivot);
 
-      // Texture loader
+      // ── Textures ───────────────────────────────────────────────────────────
       const textureLoader = new THREE.TextureLoader();
-
-      // Surface Map
-      const earthTex = textureLoader.load(earthMapUrl, () => setLoaded(true));
+      const earthTex  = textureLoader.load(earthMapUrl, () => setLoaded(true));
       earthTex.colorSpace = THREE.SRGBColorSpace;
       earthTex.anisotropy = 8;
+      const specTex   = textureLoader.load(earthSpecUrl);
+      const cloudsTex = textureLoader.load(earthCloudsUrl);
+      cloudsTex.colorSpace = THREE.SRGBColorSpace;
 
-      // Specular Map (oceans shine, land is matte)
-      const specTex = textureLoader.load(earthSpecUrl);
-
-      // 6. Earth Mesh
+      // ── Earth Mesh ─────────────────────────────────────────────────────────
       const earthGeo = new THREE.SphereGeometry(1.65, 64, 64);
       const earthMat = new THREE.MeshPhongMaterial({
         map: earthTex,
@@ -93,9 +87,7 @@ export default function Hero({ scrollProgress = 0, reducedMotion = false }) {
       const earthMesh = new THREE.Mesh(earthGeo, earthMat);
       earthPivot.add(earthMesh);
 
-      // 7. Clouds Layer
-      const cloudsTex = textureLoader.load(earthCloudsUrl);
-      cloudsTex.colorSpace = THREE.SRGBColorSpace;
+      // ── Clouds ─────────────────────────────────────────────────────────────
       const cloudsGeo = new THREE.SphereGeometry(1.668, 64, 64);
       const cloudsMat = new THREE.MeshStandardMaterial({
         map: cloudsTex,
@@ -107,128 +99,176 @@ export default function Hero({ scrollProgress = 0, reducedMotion = false }) {
       const cloudsMesh = new THREE.Mesh(cloudsGeo, cloudsMat);
       earthPivot.add(cloudsMesh);
 
-      // 8. Atmospheric Glow (Custom Fresnel Shader)
-      const atmosVertexShader = `
+      // ── Atmosphere Glow ────────────────────────────────────────────────────
+      const atmosVert = `
         varying vec3 vNormal;
         varying vec3 vPosition;
         void main() {
-          vNormal = normalize(normalMatrix * normal);
+          vNormal   = normalize(normalMatrix * normal);
           vPosition = (modelViewMatrix * vec4(position, 1.0)).xyz;
           gl_Position = projectionMatrix * vec4(vPosition, 1.0);
         }
       `;
-      const atmosFragmentShader = `
+      const atmosFrag = `
         varying vec3 vNormal;
         varying vec3 vPosition;
         void main() {
           vec3 viewDir = normalize(-vPosition);
           float fresnel = 1.0 - dot(viewDir, vNormal);
-          fresnel = pow(fresnel, 2.8);
-          vec3 glowColor = vec3(0.22, 0.68, 1.0); // Vibrant electric cyan
-          gl_FragColor = vec4(glowColor, fresnel * 0.75);
+          fresnel = pow(fresnel, 2.6);
+          vec3 glowColor = vec3(0.22, 0.68, 1.0);
+          gl_FragColor = vec4(glowColor, fresnel * 0.8);
         }
       `;
-      const atmosGeo = new THREE.SphereGeometry(1.74, 48, 48);
+      const atmosGeo = new THREE.SphereGeometry(1.75, 48, 48);
       const atmosMat = new THREE.ShaderMaterial({
-        vertexShader: atmosVertexShader,
-        fragmentShader: atmosFragmentShader,
+        vertexShader: atmosVert,
+        fragmentShader: atmosFrag,
         blending: THREE.AdditiveBlending,
         side: THREE.BackSide,
         transparent: true,
       });
-      const atmosMesh = new THREE.Mesh(atmosGeo, atmosMat);
-      earthPivot.add(atmosMesh);
+      earthPivot.add(new THREE.Mesh(atmosGeo, atmosMat));
 
-      // 9. Satellites & Orbital System
-      const satGroup = new THREE.Group();
-      scene.add(satGroup);
+      // ── Rocket Model ───────────────────────────────────────────────────────
+      const rocketGroup = new THREE.Group();
 
-      // Satellite 1: RISAT / SAR Radar Observation Satellite
-      const satBusGeo = new THREE.BoxGeometry(0.045, 0.024, 0.065);
-      const satBusMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.85, roughness: 0.2 });
-      const sat1 = new THREE.Mesh(satBusGeo, satBusMat);
+      // Body — white/silver cylinder
+      const bodyGeo = new THREE.CylinderGeometry(0.042, 0.052, 0.26, 16);
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0xf0f4f8, metalness: 0.65, roughness: 0.3 });
+      const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+      rocketGroup.add(bodyMesh);
 
-      // Solar Panels
-      const panelGeo = new THREE.BoxGeometry(0.12, 0.003, 0.046);
-      const panelMat = new THREE.MeshStandardMaterial({
-        color: 0x1d4ed8,
-        emissive: 0x1e40af,
-        emissiveIntensity: 0.4,
-        metalness: 0.5,
-        roughness: 0.3,
+      // Nose cone
+      const noseGeo = new THREE.ConeGeometry(0.042, 0.11, 16);
+      const noseMat = new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.5, roughness: 0.3 });
+      const noseMesh = new THREE.Mesh(noseGeo, noseMat);
+      noseMesh.position.y = 0.185;
+      rocketGroup.add(noseMesh);
+
+      // 3 Fins at base
+      const finMat = new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.5, roughness: 0.3 });
+      const finGeoArr = [];
+      for (let i = 0; i < 3; i++) {
+        const finGeoI = new THREE.ConeGeometry(0.001, 0.001, 3); // placeholder, replaced by shape
+        const finShape = new THREE.Shape();
+        finShape.moveTo(0, 0);
+        finShape.lineTo(0.08, -0.09);
+        finShape.lineTo(0.08, 0);
+        finShape.lineTo(0, 0);
+        const extSettings = { depth: 0.007, bevelEnabled: false };
+        const finGeoI2 = new THREE.ExtrudeGeometry(finShape, extSettings);
+        finGeoArr.push(finGeoI2);
+        const finMesh = new THREE.Mesh(finGeoI2, finMat);
+        const angle = (i * 2 * Math.PI) / 3;
+        finMesh.position.set(
+          0.052 * Math.cos(angle),
+          -0.1,
+          0.052 * Math.sin(angle)
+        );
+        finMesh.rotation.y = -angle;
+        rocketGroup.add(finMesh);
+      }
+
+      // Window porthole — glowing cyan
+      const windowGeo = new THREE.CircleGeometry(0.017, 16);
+      const windowMat = new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        emissive: 0x0ea5e9,
+        emissiveIntensity: 1.5,
+        metalness: 0.1,
+        roughness: 0.1,
       });
-      const pLeft = new THREE.Mesh(panelGeo, panelMat);
-      pLeft.position.set(-0.09, 0, 0);
-      const pRight = new THREE.Mesh(panelGeo, panelMat);
-      pRight.position.set(0.09, 0, 0);
-      sat1.add(pLeft);
-      sat1.add(pRight);
+      const windowMesh = new THREE.Mesh(windowGeo, windowMat);
+      windowMesh.position.set(0.043, 0.06, 0);
+      windowMesh.rotation.y = Math.PI / 2;
+      rocketGroup.add(windowMesh);
 
-      // SAR Antenna Dish
-      const dishGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.005, 16);
-      const dishMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.9, roughness: 0.2 });
-      const dish = new THREE.Mesh(dishGeo, dishMat);
-      dish.position.set(0, 0.02, 0);
-      sat1.add(dish);
+      // Exhaust glow sphere
+      const exhaustGeo = new THREE.SphereGeometry(0.035, 12, 12);
+      const exhaustMat = new THREE.MeshStandardMaterial({
+        color: 0xff6600,
+        emissive: 0xff4400,
+        emissiveIntensity: 3.5,
+        transparent: true,
+        opacity: 0.9,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+      const exhaustMesh = new THREE.Mesh(exhaustGeo, exhaustMat);
+      exhaustMesh.position.y = -0.165;
+      rocketGroup.add(exhaustMesh);
 
-      satGroup.add(sat1);
+      // Exhaust plume cone (pointing down)
+      const plumeGeo = new THREE.ConeGeometry(0.024, 0.13, 12);
+      const plumeMat = new THREE.MeshStandardMaterial({
+        color: 0xffd700,
+        emissive: 0xffaa00,
+        emissiveIntensity: 4.5,
+        transparent: true,
+        opacity: 0.75,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+      const plumeMesh = new THREE.Mesh(plumeGeo, plumeMat);
+      plumeMesh.position.y = -0.235;
+      plumeMesh.rotation.z = Math.PI; // tip points down
+      rocketGroup.add(plumeMesh);
 
-      // Orbital Trail Curve
-      const trailCount = 100;
-      const trailPositions = new Float32Array(trailCount * 3);
-      const trailColors = new Float32Array(trailCount * 3);
-      for (let i = 0; i < trailCount; i++) {
-        const alpha = i / trailCount;
-        trailColors[i * 3 + 0] = 0.22 + alpha * 0.78; // gold/orange fade
+      rocketGroup.scale.setScalar(1.6);
+      scene.add(rocketGroup);
+
+      // ── Orbital Trail ──────────────────────────────────────────────────────
+      const TRAIL_COUNT = 130;
+      const trailPositions = new Float32Array(TRAIL_COUNT * 3);
+      const trailColors    = new Float32Array(TRAIL_COUNT * 3);
+      for (let i = 0; i < TRAIL_COUNT; i++) {
+        const alpha = i / TRAIL_COUNT;
+        trailColors[i * 3 + 0] = 0.2 + alpha * 0.6;
         trailColors[i * 3 + 1] = 0.65;
-        trailColors[i * 3 + 2] = 0.98;
+        trailColors[i * 3 + 2] = 1.0;
       }
       const trailGeo = new THREE.BufferGeometry();
       trailGeo.setAttribute("position", new THREE.BufferAttribute(trailPositions, 3));
-      trailGeo.setAttribute("color", new THREE.BufferAttribute(trailColors, 3));
-
+      trailGeo.setAttribute("color",    new THREE.BufferAttribute(trailColors, 3));
       const trailMat = new THREE.LineBasicMaterial({
         vertexColors: true,
         transparent: true,
-        opacity: 0.65,
+        opacity: 0.55,
         blending: THREE.AdditiveBlending,
+        depthWrite: false,
       });
-      const trailLine = new THREE.Line(trailGeo, trailMat);
-      satGroup.add(trailLine);
+      scene.add(new THREE.Line(trailGeo, trailMat));
 
-      // 10. Interactive Drag to Rotate with Inertia
+      // ── Drag Interaction ───────────────────────────────────────────────────
+      const AUTO_ROT = 0.0025;
       let isDragging = false;
       let prevPointer = { x: 0, y: 0 };
-      let velocity = { x: 0.003, y: 0 };
+      let dragVelX = 0;
+      let dragVelY = 0;
 
       const onPointerDown = (e) => {
         isDragging = true;
         prevPointer = { x: e.clientX, y: e.clientY };
+        dragVelX = 0; dragVelY = 0;
       };
-
       const onPointerMove = (e) => {
         if (!isDragging) return;
-        const deltaX = e.clientX - prevPointer.x;
-        const deltaY = e.clientY - prevPointer.y;
+        const dx = e.clientX - prevPointer.x;
+        const dy = e.clientY - prevPointer.y;
         prevPointer = { x: e.clientX, y: e.clientY };
-
-        velocity.x = deltaX * 0.005;
-        velocity.y = deltaY * 0.005;
-
-        earthMesh.rotation.y += velocity.x;
-        earthPivot.rotation.x += velocity.y;
+        dragVelX = dx * 0.005;
+        dragVelY = dy * 0.005;
+        earthMesh.rotation.y  += dragVelX;
+        earthPivot.rotation.x += dragVelY;
       };
+      const onPointerUp = () => { isDragging = false; };
 
-      const onPointerUp = () => {
-        isDragging = false;
-      };
+      canvas.addEventListener("pointerdown", onPointerDown);
+      window.addEventListener("pointermove",  onPointerMove);
+      window.addEventListener("pointerup",    onPointerUp);
 
-      const dom = canvas;
-      dom.addEventListener("pointerdown", onPointerDown);
-      window.addEventListener("pointermove", onPointerMove);
-      window.addEventListener("pointerup", onPointerUp);
-
-      // 11. Resize handling
+      // ── Resize ─────────────────────────────────────────────────────────────
       const resizeObserver = new ResizeObserver(() => {
         if (!container || !renderer) return;
         const w = container.clientWidth;
@@ -240,52 +280,71 @@ export default function Hero({ scrollProgress = 0, reducedMotion = false }) {
       });
       resizeObserver.observe(container);
 
-      // 12. Animation Loop
+      // ── Animation Loop ─────────────────────────────────────────────────────
       let t = 0;
-      let trailIndex = 0;
       const history = [];
 
       const animate = () => {
         animId = requestAnimationFrame(animate);
 
-        // Constant gentle rotation if not dragging
-        if (!isDragging && !reducedMotion) {
-          velocity.x *= 0.95;
-          velocity.y *= 0.95;
-          earthMesh.rotation.y += 0.0018 + velocity.x;
-          cloudsMesh.rotation.y += 0.0024 + velocity.x * 1.1;
-          earthPivot.rotation.x += velocity.y;
+        if (!reducedMotion) {
+          // Earth ALWAYS rotates – drag velocity blends on top and damps away
+          earthMesh.rotation.y  += AUTO_ROT + dragVelX;
+          cloudsMesh.rotation.y += AUTO_ROT * 1.38 + dragVelX * 1.12;
+          if (!isDragging) {
+            dragVelX *= 0.91;
+            if (Math.abs(dragVelY) > 0.00008) {
+              earthPivot.rotation.x += dragVelY;
+              dragVelY *= 0.91;
+            }
+          }
         }
 
-        // Satellite Orbital Mechanics
-        t += 0.014;
-        const orbitR = 2.45;
-        const orbitInc = 0.72; // ~41° inclination
-        const satX = orbitR * Math.cos(t);
-        const satY = orbitR * Math.sin(t) * Math.sin(orbitInc);
-        const satZ = orbitR * Math.sin(t) * Math.cos(orbitInc);
+        // ── Rocket orbit ──────────────────────────────────────────────────
+        t += 0.018;
+        const ORBIT_R   = 2.52;
+        const ORBIT_INC = 0.65; // ~37° inclination
 
-        sat1.position.set(satX, satY, satZ);
-        sat1.lookAt(
-          satX - Math.sin(t),
-          satY + Math.cos(t) * Math.sin(orbitInc),
-          satZ + Math.cos(t) * Math.cos(orbitInc)
-        );
+        const rX = ORBIT_R * Math.cos(t);
+        const rY = ORBIT_R * Math.sin(t) * Math.sin(ORBIT_INC);
+        const rZ = ORBIT_R * Math.sin(t) * Math.cos(ORBIT_INC);
 
-        // Update trail buffer
-        history.push(new THREE.Vector3(satX, satY, satZ));
-        if (history.length > trailCount) history.shift();
+        rocketGroup.position.set(rX, rY, rZ);
+
+        // Orientation: nose points along velocity tangent, up toward away-from-globe
+        const forward = new THREE.Vector3(
+          -Math.sin(t),
+           Math.cos(t) * Math.sin(ORBIT_INC),
+           Math.cos(t) * Math.cos(ORBIT_INC)
+        ).normalize();
+        const outward = new THREE.Vector3(rX, rY, rZ).normalize();
+        const right   = new THREE.Vector3().crossVectors(outward, forward).normalize();
+        // Re-orthogonalize forward
+        const corrForward = new THREE.Vector3().crossVectors(right, outward).normalize();
+
+        const rm = new THREE.Matrix4();
+        rm.makeBasis(right, outward, corrForward.negate());
+        rocketGroup.quaternion.setFromRotationMatrix(rm);
+
+        // Pulse exhaust
+        const pulse = 0.88 + 0.12 * Math.sin(t * 20);
+        exhaustMesh.scale.setScalar(pulse);
+        plumeMesh.scale.y = pulse * 1.3;
+
+        // ── Trail ────────────────────────────────────────────────────────
+        history.push(new THREE.Vector3(rX, rY, rZ));
+        if (history.length > TRAIL_COUNT) history.shift();
 
         const posAttr = trailGeo.attributes.position;
         for (let i = 0; i < history.length; i++) {
           posAttr.setXYZ(i, history[i].x, history[i].y, history[i].z);
         }
-        for (let i = history.length; i < trailCount; i++) {
-          posAttr.setXYZ(i, satX, satY, satZ);
+        for (let i = history.length; i < TRAIL_COUNT; i++) {
+          posAttr.setXYZ(i, rX, rY, rZ);
         }
         posAttr.needsUpdate = true;
 
-        // Camera zoom reaction based on scrollProgress
+        // ── Camera zoom ──────────────────────────────────────────────────
         const targetZ = 4.8 - (scrollProgress || 0) * 1.8;
         camera.position.z += (targetZ - camera.position.z) * 0.08;
 
@@ -296,27 +355,17 @@ export default function Hero({ scrollProgress = 0, reducedMotion = false }) {
 
       return () => {
         if (animId) cancelAnimationFrame(animId);
-        dom.removeEventListener("pointerdown", onPointerDown);
-        window.removeEventListener("pointermove", onPointerMove);
-        window.removeEventListener("pointerup", onPointerUp);
+        canvas.removeEventListener("pointerdown", onPointerDown);
+        window.removeEventListener("pointermove",  onPointerMove);
+        window.removeEventListener("pointerup",    onPointerUp);
         resizeObserver.disconnect();
-
-        if (renderer) {
-          renderer.dispose();
-        }
-        earthGeo.dispose();
-        earthMat.dispose();
-        cloudsGeo.dispose();
-        cloudsMat.dispose();
-        atmosGeo.dispose();
-        atmosMat.dispose();
-        satBusGeo.dispose();
-        panelGeo.dispose();
-        dishGeo.dispose();
-        trailGeo.dispose();
+        if (renderer) renderer.dispose();
+        [earthGeo, earthMat, cloudsGeo, cloudsMat, atmosGeo, atmosMat,
+         bodyGeo, noseGeo, windowGeo, exhaustGeo, plumeGeo, trailGeo,
+         ...finGeoArr].forEach(o => { try { o.dispose(); } catch(_) {} });
       };
     } catch (err) {
-      console.error("[SatQuery] WebGL Globe Initialization Failed:", err);
+      console.error("[VajraVision] WebGL Globe Init Failed:", err);
       setWebglError(true);
     }
   }, [scrollProgress, reducedMotion]);
@@ -324,11 +373,8 @@ export default function Hero({ scrollProgress = 0, reducedMotion = false }) {
   if (webglError) {
     return (
       <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <img
-          src={earthMapUrl}
-          alt="Earth"
-          style={{ width: "80%", borderRadius: "50%", boxShadow: "0 0 40px rgba(56,189,248,0.3)" }}
-        />
+        <img src={earthMapUrl} alt="Earth"
+          style={{ width: "80%", borderRadius: "50%", boxShadow: "0 0 40px rgba(56,189,248,0.3)" }} />
       </div>
     );
   }
@@ -337,26 +383,16 @@ export default function Hero({ scrollProgress = 0, reducedMotion = false }) {
     <div
       ref={containerRef}
       style={{
-        width: "100%",
-        height: "100%",
-        position: "absolute",
-        inset: 0,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        cursor: "grab",
-        userSelect: "none",
+        width: "100%", height: "100%",
+        position: "absolute", inset: 0,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        cursor: "grab", userSelect: "none",
       }}
-      title="Click and drag to rotate the 3D Earth"
+      title="Drag to rotate the Earth"
     >
       <canvas
         ref={canvasRef}
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "block",
-          outline: "none",
-        }}
+        style={{ width: "100%", height: "100%", display: "block", outline: "none" }}
       />
     </div>
   );
